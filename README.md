@@ -1,36 +1,48 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# URL SYSTEM - Enterprise Architecture
 
-## Getting Started
+URL SYSTEM has been restructured into an enterprise-grade, 4-team Domain Driven Design (DDD) architecture.
 
-First, run the development server:
+## Team Ownership & Domains
 
+### 1. FRONTEND TEAM (`/src/frontend`)
+Owns the cinematic UI, state management, layouts, and visual effects.
+- **Components**: Tactical UI modules (`LiveThreatFeed`, `ThreatVisualizer`)
+- **State**: Zustand store (`useUIStore`)
+- **Animations**: Framer Motion configurations
+
+### 2. BACKEND TEAM (`/src/backend`)
+Owns the core API logic, database interactions, middleware, and request validation.
+- **Middleware**: API security headers and rate limiting.
+- **Database**: Supabase client initialization and queries.
+- **Services**: API orchestration and external upload handling.
+
+### 3. AI TEAM (`/src/ai`)
+Owns the Ollama integration, Llama 3 agents, and persistent memory systems.
+- **Agents**: `URLAgent`, `EmailAgent`, `ThreatReasoningAgent`
+- **Prompts**: `promptEngine.ts`
+- **Memory**: `threatMemoryService.ts` for context syncing.
+
+### 4. CYBERSECURITY TEAM (`/src/cyber`)
+Owns the threat detection heuristics, scoring logic, and attack signatures.
+- **Heuristics**: Hardcoded rules for identifying phishing, disposable emails, and scam domains.
+- **Scoring**: `threatScoringService.ts` (modifies confidence based on AI memory).
+
+### Additional Domains
+- `/src/shared`: Utilities and constants shared across all teams.
+- `/src/types`: Global TypeScript interfaces (`ThreatMemoryRecord`, `ScanResult`, etc.).
+- `/src/app`: The Next.js App Router (Thin wrappers connecting frontend and backend).
+
+## Development Workflow
+When making changes, always use the configured path aliases:
+- `@frontend/*`
+- `@backend/*`
+- `@ai/*`
+- `@cyber/*`
+- `@projectTypes/*`
+- `@shared/*`
+
+## Running Locally
 ```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+npm run dev:all
 ```
-
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
-
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
-
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
-
-## Learn More
-
-To learn more about Next.js, take a look at the following resources:
-
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
-
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+This boots the Next.js server and prints instructions for verifying the Ollama AI service is running.
