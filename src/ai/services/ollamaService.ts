@@ -1,5 +1,5 @@
 export const OLLAMA_ENDPOINT = process.env.OLLAMA_API_URL || 'http://localhost:11434/api/generate';
-export const AI_MODEL = process.env.AI_MODEL || 'llama3';
+export const AI_MODEL = process.env.AI_MODEL || 'qwen2.5:7b';
 export const AI_TEMPERATURE = 0.2;
 
 export interface OllamaResponse {

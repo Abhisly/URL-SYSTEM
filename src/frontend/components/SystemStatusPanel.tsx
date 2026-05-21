@@ -8,7 +8,7 @@ export default function SystemStatusPanel() {
   useEffect(() => {
     fetch('/api/system-status')
       .then(res => res.json())
-      .then(data => setAiStatus(data.ai_orchestrator || 'offline'))
+      .then(data => setAiStatus(data.services?.ai_orchestrator || 'offline'))
       .catch(() => setAiStatus('offline'));
   }, []);
 

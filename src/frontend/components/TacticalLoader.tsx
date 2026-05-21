@@ -3,70 +3,82 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { useState, useEffect } from 'react';
 
 const SEQUENCES = [
+  '[ UPLINK ESTABLISHED ]',
   '[ INITIALIZING NEURAL ENGINE ]',
-  '[ EXTRACTING TARGET FEATURES ]',
+  '[ EXTRACTING TARGET SIGNATURES ]',
   '[ ANALYZING HEURISTIC ANOMALIES ]',
-  '[ QUERYING OLLAMA RUNTIME ]',
-  '[ DEEP THREAT REASONING IN PROGRESS ]',
-  '[ COMPILING TACTICAL INTELLIGENCE ]'
+  '[ QUERYING L-3 RUNTIME ]',
+  '[ DEEP THREAT REASONING ]',
+  '[ COMPILING INTELLIGENCE ]'
 ];
 
 export default function TacticalLoader() {
   const [stage, setStage] = useState(0);
-  const [stream, setStream] = useState('');
-
-  // Hex stream effect
-  useEffect(() => {
-    const chars = '0123456789ABCDEF01010101';
-    const iv = setInterval(() => {
-      let s = '';
-      for (let i = 0; i < 48; i++) s += chars[Math.floor(Math.random() * chars.length)];
-      setStream(s);
-    }, 40);
-    return () => clearInterval(iv);
-  }, []);
 
   // Sequence progression
   useEffect(() => {
     const iv = setInterval(() => {
       setStage(s => (s < SEQUENCES.length - 1 ? s + 1 : s));
-    }, 800);
+    }, 900);
     return () => clearInterval(iv);
   }, []);
 
   return (
     <motion.div 
       key="working" 
-      initial={{ opacity: 0 }} 
-      animate={{ opacity: 1 }} 
-      exit={{ opacity: 0 }} 
-      className="flex flex-col items-center gap-4 w-full max-w-2xl text-center font-mono"
+      initial={{ opacity: 0, scale: 0.95 }} 
+      animate={{ opacity: 1, scale: 1 }} 
+      exit={{ opacity: 0, filter: 'blur(10px)', scale: 1.05 }} 
+      transition={{ duration: 0.8, ease: [0.16, 1, 0.3, 1] }}
+      className="flex flex-col items-center justify-center gap-10 w-full max-w-2xl text-center font-mono py-12"
     >
-      <div className="relative w-full h-[2px] bg-white/10 overflow-hidden mb-2">
+      {/* Abstract Neural Core Animation */}
+      <div className="relative w-32 h-32 flex items-center justify-center">
+        {/* Outer Ring */}
         <motion.div 
-          initial={{ x: '-100%' }}
-          animate={{ x: '100%' }}
-          transition={{ duration: 1.5, repeat: Infinity, ease: 'linear' }}
-          className="absolute top-0 left-0 h-full w-1/3 bg-white"
+          animate={{ rotate: 360 }}
+          transition={{ duration: 8, ease: "linear", repeat: Infinity }}
+          className="absolute inset-0 rounded-full border border-white/5 border-t-white/30 border-r-white/30"
         />
+        {/* Inner Ring */}
+        <motion.div 
+          animate={{ rotate: -360 }}
+          transition={{ duration: 5, ease: "linear", repeat: Infinity }}
+          className="absolute inset-4 rounded-full border border-white/10 border-b-white/50 border-l-white/50"
+        />
+        {/* Core Pulse */}
+        <motion.div 
+          animate={{ scale: [1, 1.2, 1], opacity: [0.3, 0.8, 0.3] }}
+          transition={{ duration: 2, ease: "easeInOut", repeat: Infinity }}
+          className="absolute inset-10 bg-white/20 rounded-full blur-[10px]"
+        />
+        <div className="w-2 h-2 bg-white rounded-full shadow-[0_0_15px_rgba(255,255,255,1)]" />
       </div>
 
-      <div className="h-6 overflow-hidden flex items-center justify-center">
-        <AnimatePresence mode="popLayout">
-          <motion.div
-            key={stage}
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -10 }}
-            className="text-[11px] tracking-[0.4em] text-white font-bold uppercase"
-          >
-            {SEQUENCES[stage]}
-          </motion.div>
-        </AnimatePresence>
-      </div>
+      <div className="flex flex-col items-center gap-3">
+        <div className="h-6 overflow-hidden flex items-center justify-center">
+          <AnimatePresence mode="popLayout">
+            <motion.div
+              key={stage}
+              initial={{ opacity: 0, y: 15, filter: 'blur(4px)' }}
+              animate={{ opacity: 1, y: 0, filter: 'blur(0px)' }}
+              exit={{ opacity: 0, y: -15, filter: 'blur(4px)' }}
+              transition={{ duration: 0.4, ease: "easeOut" }}
+              className="text-[12px] tracking-[0.5em] text-white font-bold uppercase drop-shadow-[0_0_10px_rgba(255,255,255,0.3)]"
+            >
+              {SEQUENCES[stage]}
+            </motion.div>
+          </AnimatePresence>
+        </div>
 
-      <div className="text-[9px] tracking-[0.6em] text-white/30 break-all leading-[1.8]">
-        {stream}
+        <div className="flex gap-1">
+          {[...Array(SEQUENCES.length)].map((_, i) => (
+            <motion.div 
+              key={i}
+              className={`h-1 transition-all duration-500 rounded-full ${i <= stage ? 'w-6 bg-white shadow-[0_0_8px_rgba(255,255,255,0.8)]' : 'w-2 bg-white/10'}`}
+            />
+          ))}
+        </div>
       </div>
     </motion.div>
   );
