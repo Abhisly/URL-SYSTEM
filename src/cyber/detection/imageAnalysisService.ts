@@ -2,19 +2,15 @@ import { analyzeImageText } from '@cyber/heuristics/imageHeuristics';
 import { calculateRiskLevel, determineImageStatus, adjustScoreBasedOnMemory } from '@cyber/scoring/threatScoringService';
 import { supabase } from '@backend/database/supabase';
 import { ImageScanResponse } from '@projectTypes/index';
-import { extractTextFromImage } from '@ai/ocr/ocrService';
 
-export async function processImageScan(imageBuffer: Buffer, filename: string): Promise<ImageScanResponse> {
-  // 1. OCR Extraction
-  const text = await extractTextFromImage(imageBuffer);
-  
-  // 2. Heuristic Analysis
-  const heuristicResult = analyzeImageText(text);
+export async function processImageScan(ocrText: string, filename: string): Promise<ImageScanResponse> {
+  // 1. Heuristic Analysis
+  const heuristicResult = analyzeImageText(ocrText);
   
   // Dynamic threat score adjustment based on neural memory cache
   const { score, reasons } = adjustScoreBasedOnMemory(
     heuristicResult.score,
-    text || filename,
+    ocrText || filename,
     'IMAGE',
     heuristicResult.reasons
   );
@@ -28,13 +24,13 @@ export async function processImageScan(imageBuffer: Buffer, filename: string): P
     confidence: Math.round(confidence),
     riskLevel,
     reasons,
-    extractedText: text.substring(0, 500) // Truncate for response
+    extractedText: ocrText.substring(0, 500) // Truncate for response
   };
 
   // 3. Log to DB
   supabase.from('image_scans').insert([{
     filename,
-    ocr_text: text,
+    ocr_text: ocrText,
     status,
     confidence: Math.round(confidence),
     risk_level: riskLevel,

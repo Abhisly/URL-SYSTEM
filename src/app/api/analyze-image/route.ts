@@ -9,18 +9,15 @@ export async function POST(request: NextRequest) {
     if (!checkRateLimit(ip)) {
       return errorResponse('Rate limit exceeded. Please wait 60 seconds.', 429);
     }
-    const formData = await request.formData();
-    const file = formData.get('image') as File | null;
+    const body = await request.json();
+    const { ocrText, filename } = body;
 
-    if (!file) {
-      return errorResponse('No image file provided', 400);
+    if (typeof ocrText !== 'string' || !filename) {
+      return errorResponse('Missing ocrText or filename in request', 400);
     }
 
-    const arrayBuffer = await file.arrayBuffer();
-    const buffer = Buffer.from(arrayBuffer);
-
-    // Agent handles OCR, heuristic orchestration, and database logging
-    const result = await ImageThreatAgent.analyze(buffer, file.name);
+    // Agent handles heuristic orchestration, and database logging
+    const result = await ImageThreatAgent.analyze(ocrText, filename);
 
     return successResponse(result);
   } catch (error) {

@@ -1,4 +1,5 @@
 import { create } from 'zustand';
+import Tesseract from 'tesseract.js';
 
 export type ScanMode = 'URL' | 'EMAIL' | 'IMAGE';
 
@@ -26,7 +27,7 @@ interface UIStore {
   imageScanComplete: boolean;
   imageScanResult?: Record<string, unknown> | undefined;
   setImageName: (v: string) => void;
-  triggerImageScan: () => void;
+  triggerImageScan: (file?: File) => void;
   resetImageScan: () => void;
 }
 
@@ -74,11 +75,34 @@ export const useUIStore = create<UIStore>((set, get) => ({
   imageScanComplete: false,
   imageScanResult: undefined,
   setImageName: (v) => set({ imageName: v }),
-  triggerImageScan: async () => {
+  triggerImageScan: async (file?: File) => {
     set({ isImageScanning: true, imageScanComplete: false, imageScanResult: undefined });
-    // This assumes the frontend will handle uploading properly elsewhere, 
-    // or we modify this later for actual file upload, but for now we just mock the fetch or do a basic one.
-    setTimeout(() => set({ isImageScanning: false, imageScanComplete: true, imageScanResult: { status: 'SAFE', aiExplanation: 'Mock image result' } }), 2500);
+    
+    if (!file) {
+      set({ isImageScanning: false, imageScanComplete: true, imageScanResult: { status: 'SAFE', aiExplanation: 'No image provided.' } });
+      return;
+    }
+
+    try {
+      // 1. Run OCR directly on the client side
+      const tesseractResult = await Tesseract.recognize(file, 'eng');
+      const ocrText = tesseractResult.data.text;
+
+      // 2. Send text to backend for AI scoring
+      const res = await fetch('/api/analyze-image', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ ocrText, filename: file.name }),
+      });
+      
+      if (!res.ok) throw new Error('API Error');
+      const data = await res.json();
+      
+      set({ isImageScanning: false, imageScanComplete: true, imageScanResult: data });
+    } catch (err) {
+      console.error(err);
+      set({ isImageScanning: false, imageScanComplete: true, imageScanResult: { error: true, aiExplanation: 'Failed to extract content or analyze image.' } });
+    }
   },
   resetImageScan: () => set({ imageName: '', isImageScanning: false, imageScanComplete: false, imageScanResult: undefined }),
 }));

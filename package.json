@@ -12,8 +12,11 @@
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.106.1",
-    "framer-motion": "^12.39.0",
+    "framer-motion": "^12.40.0",
+    "lucide-react": "^1.16.0",
+    "motion": "^12.40.0",
     "next": "15.5.18",
+    "prop-types": "^15.8.1",
     "react": "19.1.0",
     "react-dom": "19.1.0",
     "tesseract.js": "^7.0.0",
