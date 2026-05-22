@@ -49,6 +49,41 @@ export function analyzeUrl(url: string): { score: number; reasons: ThreatReason[
       reasons.push({ id: 'MULTIPLE_HYPHENS', description: 'Domain contains multiple hyphens', severity: 'low' });
     }
 
+    // Advanced Checks:
+    
+    // 1. Check IDN Homograph Attack (non-ASCII characters in hostname)
+    if (/[^\x00-\x7F]/.test(parsedUrl.hostname)) {
+      score += 40;
+      reasons.push({ id: 'HOMOGRAPH_SPOOFING', description: 'Domain contains internationalized/non-ASCII characters (potential homograph spoofing)', severity: 'high' });
+    }
+
+    // 2. Check Suspicious/Scam TLDs
+    const scamTLDs = ['.xyz', '.top', '.info', '.work', '.click', '.gq', '.cf', '.tk', '.ml', '.ga', '.buzz', '.cam', '.fit', '.gdn', '.science', '.country', '.stream', '.download', '.zip'];
+    const currentTLD = '.' + parts[parts.length - 1].toLowerCase();
+    if (scamTLDs.includes(currentTLD)) {
+      score += 25;
+      reasons.push({ id: 'SUSPICIOUS_TLD', description: `URL uses a top-level domain frequently associated with spam or scams: ${currentTLD}`, severity: 'medium' });
+    }
+
+    // 3. Check Obfuscated Credentials in Authority
+    if (parsedUrl.username || parsedUrl.password) {
+      score += 35;
+      reasons.push({ id: 'OBFUSCATED_AUTH', description: 'URL contains obfuscated username/password credentials in authority', severity: 'high' });
+    }
+
+    // 4. Check Double Slash Redirection in Path
+    const rawPath = url.replace(/^https?:\/\//i, '');
+    if (rawPath.includes('//')) {
+      score += 30;
+      reasons.push({ id: 'DOUBLE_SLASH_REDIRECT', description: 'URL contains double slashes in path (potential redirect obfuscation)', severity: 'high' });
+    }
+
+    // 5. Check Non-Standard Ports
+    if (parsedUrl.port && !['80', '443', ''].includes(parsedUrl.port)) {
+      score += 20;
+      reasons.push({ id: 'NON_STANDARD_PORT', description: `URL specifies a non-standard port: :${parsedUrl.port}`, severity: 'medium' });
+    }
+
   } catch {
     score += 50;
     reasons.push({ id: 'MALFORMED_URL', description: 'URL structure is invalid or malformed', severity: 'high' });

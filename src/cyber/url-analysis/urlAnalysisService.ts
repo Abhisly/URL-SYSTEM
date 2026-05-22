@@ -1,10 +1,18 @@
 import { analyzeUrl } from '@cyber/heuristics/urlHeuristics';
-import { calculateRiskLevel, determineUrlStatus } from '@cyber/scoring/threatScoringService';
+import { calculateRiskLevel, determineUrlStatus, adjustScoreBasedOnMemory } from '@cyber/scoring/threatScoringService';
 import { supabase } from '@backend/database/supabase';
 import { URLScanResponse } from '@projectTypes/index';
 
 export async function processUrlScan(url: string): Promise<URLScanResponse> {
-  const { score, reasons } = analyzeUrl(url);
+  const heuristicResult = analyzeUrl(url);
+  
+  // Dynamic threat score adjustment based on neural memory cache
+  const { score, reasons } = adjustScoreBasedOnMemory(
+    heuristicResult.score,
+    url,
+    'URL',
+    heuristicResult.reasons
+  );
   
   const riskLevel = calculateRiskLevel(score);
   const status = determineUrlStatus(score);

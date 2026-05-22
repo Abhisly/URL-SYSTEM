@@ -14,7 +14,12 @@ export function analyzeEmail(email: string): { score: number; reasons: ThreatRea
   const [localPart, domain] = email.split('@');
 
   // Check Disposable Domains
-  const disposableDomains = ['tempmail.com', '10minutemail.com', 'guerrillamail.com', 'mailinator.com', 'yopmail.com'];
+  const disposableDomains = [
+    'tempmail.com', '10minutemail.com', 'guerrillamail.com', 'mailinator.com', 'yopmail.com',
+    'dispostable.com', 'getairmail.com', 'trashmail.com', 'temp-mail.org', 'throwawaymail.com',
+    'tempmailaddress.com', 'maildrop.cc', 'sharklasers.com', 'guerrillamailblock.com',
+    'guerrillamail.net', 'guerrillamail.org', 'guerrillamail.biz'
+  ];
   if (disposableDomains.includes(domain.toLowerCase())) {
     score += 60;
     reasons.push({ id: 'DISPOSABLE_DOMAIN', description: 'Email uses a known disposable domain service', severity: 'high' });
@@ -37,6 +42,15 @@ export function analyzeEmail(email: string): { score: number; reasons: ThreatRea
         score += 50;
         reasons.push({ id: 'BRAND_SPOOFING', description: `Attempted brand spoofing from public domain: ${brand}`, severity: 'high' });
       }
+    }
+  }
+
+  // Check local part spam keywords
+  const spamKeywords = ['prize', 'winner', 'lottery', 'free', 'bonus', 'claim', 'giftcard', 'urgent', 'invoice', 'overdue', 'wire-transfer', 'refund'];
+  for (const keyword of spamKeywords) {
+    if (localPart.toLowerCase().includes(keyword)) {
+      score += 25;
+      reasons.push({ id: 'SPAM_KEYWORD', description: `Local part contains suspicious spam/scam keyword: "${keyword}"`, severity: 'medium' });
     }
   }
 

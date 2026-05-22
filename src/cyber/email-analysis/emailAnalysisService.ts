@@ -1,10 +1,18 @@
 import { analyzeEmail } from '@cyber/heuristics/emailHeuristics';
-import { calculateRiskLevel, determineEmailStatus } from '@cyber/scoring/threatScoringService';
+import { calculateRiskLevel, determineEmailStatus, adjustScoreBasedOnMemory } from '@cyber/scoring/threatScoringService';
 import { supabase } from '@backend/database/supabase';
 import { EmailScanResponse } from '@projectTypes/index';
 
 export async function processEmailScan(email: string): Promise<EmailScanResponse> {
-  const { score, reasons } = analyzeEmail(email);
+  const heuristicResult = analyzeEmail(email);
+  
+  // Dynamic threat score adjustment based on neural memory cache
+  const { score, reasons } = adjustScoreBasedOnMemory(
+    heuristicResult.score,
+    email,
+    'EMAIL',
+    heuristicResult.reasons
+  );
   
   const riskLevel = calculateRiskLevel(score);
   const status = determineEmailStatus(score);

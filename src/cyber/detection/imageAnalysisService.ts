@@ -1,5 +1,5 @@
 import { analyzeImageText } from '@cyber/heuristics/imageHeuristics';
-import { calculateRiskLevel, determineImageStatus } from '@cyber/scoring/threatScoringService';
+import { calculateRiskLevel, determineImageStatus, adjustScoreBasedOnMemory } from '@cyber/scoring/threatScoringService';
 import { supabase } from '@backend/database/supabase';
 import { ImageScanResponse } from '@projectTypes/index';
 import { extractTextFromImage } from '@ai/ocr/ocrService';
@@ -9,7 +9,15 @@ export async function processImageScan(imageBuffer: Buffer, filename: string): P
   const text = await extractTextFromImage(imageBuffer);
   
   // 2. Heuristic Analysis
-  const { score, reasons } = analyzeImageText(text);
+  const heuristicResult = analyzeImageText(text);
+  
+  // Dynamic threat score adjustment based on neural memory cache
+  const { score, reasons } = adjustScoreBasedOnMemory(
+    heuristicResult.score,
+    text || filename,
+    'IMAGE',
+    heuristicResult.reasons
+  );
   
   const riskLevel = calculateRiskLevel(score);
   const status = determineImageStatus(score);
