@@ -86,7 +86,6 @@ const HoverButton = React.forwardRef<HTMLButtonElement, HoverButtonProps>(
     return (
       <button
         ref={(node) => {
-          // @ts-expect-error local ref merging
           buttonRef.current = node
           if (typeof ref === "function") ref(node)
           else if (ref) ref.current = node
