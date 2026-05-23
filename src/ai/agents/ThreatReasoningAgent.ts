@@ -11,6 +11,73 @@ export interface AIInsights {
   detectedPatterns: string[];
 }
 
+// ── Trusted apex domains for URL fallback ──
+const TRUSTED_URL_DOMAINS = new Set([
+  'google.com', 'gmail.com', 'youtube.com', 'facebook.com', 'instagram.com',
+  'twitter.com', 'x.com', 'amazon.com', 'amazon.in', 'amazon.co.uk',
+  'microsoft.com', 'live.com', 'outlook.com', 'hotmail.com',
+  'apple.com', 'icloud.com', 'paypal.com', 'paypal.me',
+  'netflix.com', 'spotify.com', 'twitch.tv', 'discord.com',
+  'github.com', 'gitlab.com', 'linkedin.com', 'reddit.com',
+  'wikipedia.org', 'openai.com', 'chatgpt.com', 'anthropic.com', 'claude.ai',
+  'notion.so', 'vercel.com', 'stripe.com', 'shopify.com',
+  'zoom.us', 'slack.com', 'dropbox.com', 'ebay.com',
+  'chase.com', 'bankofamerica.com', 'wellsfargo.com',
+]);
+
+// ── Trusted email domains for EMAIL fallback ──
+const TRUSTED_EMAIL_DOMAINS = new Set([
+  'gmail.com', 'googlemail.com', 'outlook.com', 'hotmail.com', 'live.com', 'msn.com',
+  'yahoo.com', 'yahoo.co.uk', 'icloud.com', 'me.com', 'mac.com',
+  'protonmail.com', 'proton.me', 'tutanota.com', 'fastmail.com',
+  'paypal.com', 'amazon.com', 'apple.com', 'microsoft.com', 'google.com',
+  'netflix.com', 'spotify.com', 'linkedin.com', 'twitter.com', 'facebook.com',
+  'stripe.com', 'shopify.com', 'github.com',
+]);
+
+const DISPOSABLE_EMAIL_DOMAINS = new Set([
+  'tempmail.com', '10minutemail.com', 'guerrillamail.com', 'mailinator.com',
+  'yopmail.com', 'trashmail.com', 'temp-mail.org', 'throwawaymail.com',
+  'maildrop.cc', 'sharklasers.com', 'fakeinbox.com', 'spam4.me',
+  'discard.email', 'mintemail.com',
+]);
+
+const PUBLIC_FREE_DOMAINS = new Set([
+  'gmail.com', 'googlemail.com', 'yahoo.com', 'yahoo.co.uk', 'yahoo.in',
+  'hotmail.com', 'outlook.com', 'live.com', 'msn.com', 'icloud.com', 'me.com',
+  'protonmail.com', 'proton.me',
+]);
+
+const BRAND_KEYWORDS_FOR_SPOOFING = [
+  'paypal', 'apple', 'amazon', 'microsoft', 'google', 'netflix', 'spotify',
+  'facebook', 'instagram', 'twitter', 'linkedin', 'ebay', 'walmart', 'chase',
+  'wellsfargo', 'bankofamerica', 'citibank', 'irs', 'fedex', 'dhl', 'ups',
+];
+
+function getApexDomain(hostname: string): string {
+  const parts = hostname.split('.');
+  const twoPartSuffix = ['co.uk', 'com.au', 'co.in', 'co.jp', 'com.br'];
+  const suffix = parts.slice(-2).join('.');
+  if (twoPartSuffix.includes(suffix) && parts.length > 2) return parts.slice(-3).join('.');
+  return parts.slice(-2).join('.');
+}
+
+/**
+ * Assess the aggregate severity of heuristic flags.
+ * Returns: 'safe' | 'low' | 'medium' | 'high' | 'critical'
+ */
+function assessHeuristicSeverity(reasons: ThreatReason[]): 'safe' | 'low' | 'medium' | 'high' | 'critical' {
+  if (reasons.length === 0) return 'safe';
+  const hasCritical = reasons.some(r => r.severity === 'high' && ['BRAND_IMPERSONATION', 'BRAND_SPOOFING', 'DECEPTIVE_SUBDOMAIN', 'TYPOSQUATTING', 'IP_HOSTNAME', 'BRAND_DOMAIN_ABUSE', 'DISPOSABLE_DOMAIN', 'CREDENTIAL_HARVESTING'].includes(r.id));
+  const highCount = reasons.filter(r => r.severity === 'high').length;
+  const mediumCount = reasons.filter(r => r.severity === 'medium').length;
+  if (hasCritical || highCount >= 2) return 'critical';
+  if (highCount === 1) return 'high';
+  if (mediumCount >= 2) return 'medium';
+  if (reasons.length > 0) return 'low';
+  return 'safe';
+}
+
 export class ThreatReasoningAgent {
   static async reason(
     contextType: 'URL' | 'EMAIL' | 'IMAGE',
@@ -47,7 +114,8 @@ export class ThreatReasoningAgent {
 
     } catch {
       console.warn(`[ThreatReasoningAgent] Ollama unreachable. Using smart fallback.`);
-      const hasFlags = currentReasons.length > 0;
+      const severity = assessHeuristicSeverity(currentReasons);
+      const flagCount = currentReasons.length;
 
       // ── URL fallback ──
       if (contextType === 'URL') {
@@ -56,99 +124,152 @@ export class ThreatReasoningAgent {
         const domain = metadata?.domain || rawContext;
 
         let displayUrl = rawContext;
+        let apexDomain = domain;
         try {
           const urlLine = rawContext.split('\n')[0];
           displayUrl = urlLine.replace('URL: ', '').trim();
+          const parsed = new URL(displayUrl.startsWith('http') ? displayUrl : `https://${displayUrl}`);
+          apexDomain = getApexDomain(parsed.hostname);
         } catch { /* keep */ }
 
-        const knownSites: Record<string, string> = {
-          'google.com': 'Google.com is the homepage of Google LLC, one of the world\'s most widely-used search engines offering web search, Gmail, Maps, YouTube, and cloud services.',
-          'youtube.com': 'YouTube.com is a video-sharing platform owned by Google LLC where billions of users upload, share, and stream video content.',
-          'facebook.com': 'Facebook.com is a social networking platform owned by Meta Platforms Inc., connecting billions of users globally.',
-          'twitter.com': 'Twitter.com (now X) is a microblogging platform where users post short messages called tweets.',
-          'x.com': 'X.com is the rebranded Twitter platform for real-time public conversation and news sharing.',
-          'instagram.com': 'Instagram.com is a photo and video sharing social network owned by Meta Platforms Inc.',
-          'amazon.com': 'Amazon.com is the world\'s largest e-commerce marketplace operated by Amazon Inc.',
-          'github.com': 'GitHub.com is a developer platform owned by Microsoft for Git repository hosting and collaborative software development.',
-          'linkedin.com': 'LinkedIn.com is a professional networking platform owned by Microsoft for career development and business networking.',
-          'wikipedia.org': 'Wikipedia.org is a free online encyclopedia edited by volunteers covering millions of topics.',
-          'reddit.com': 'Reddit.com is a social news aggregation and discussion platform.',
-          'netflix.com': 'Netflix.com is a subscription streaming platform for movies, TV series, and original content.',
-          'apple.com': 'Apple.com is the official website of Apple Inc., featuring iPhone, Mac, and various services.',
-          'microsoft.com': 'Microsoft.com is the official website of Microsoft Corporation for Windows, Office, and Azure services.',
-          'openai.com': 'OpenAI.com is the website of OpenAI, the AI research organization behind ChatGPT and the GPT series.',
-          'claude.ai': 'Claude.ai is the official web interface of Claude, an AI assistant developed by Anthropic for conversational AI, analysis, coding, and writing.',
-          'anthropic.com': 'Anthropic.com is the website of Anthropic, an AI safety company that develops the Claude series of large language models.',
-          'chatgpt.com': 'ChatGPT.com is the official platform for ChatGPT, an AI chatbot developed by OpenAI for natural language conversation.',
-          'notion.so': 'Notion.so is a collaborative productivity platform combining notes, databases, and project management tools.',
-          'vercel.com': 'Vercel.com is a cloud platform for front-end developers specializing in Next.js applications.',
-          'stripe.com': 'Stripe.com is a financial infrastructure platform for online payments and billing.',
-          'spotify.com': 'Spotify.com is a music and podcast streaming platform with over 100 million tracks.',
-          'twitch.tv': 'Twitch.tv is a live streaming platform primarily for gaming and creative content, owned by Amazon.',
-          'discord.com': 'Discord.com is a communication platform popular with gaming, developer, and online communities.',
-          'paypal.com': 'PayPal.com is a global digital payments platform for sending and receiving money securely.',
-        };
-
-        let siteDescription = '';
-        if (siteTitle && siteDesc) {
-          siteDescription = `"${domain}" — identified as "${siteTitle}". ${siteDesc}`;
-        } else if (siteTitle && siteTitle !== domain) {
-          siteDescription = `The domain "${domain}" hosts a page titled "${siteTitle}", indicating it belongs to ${siteTitle.split(' | ')[0].split(' - ')[0].trim()}.`;
-        } else {
-          siteDescription = knownSites[domain] ?? `The target domain "${domain}" was analyzed for structural and security properties.`;
+        const isTrusted = TRUSTED_URL_DOMAINS.has(apexDomain);
+        
+        // Check for brand impersonation: page title claims a trusted brand but domain doesn't match
+        let titleBrandMismatch = false;
+        if (siteTitle) {
+          for (const brand of BRAND_KEYWORDS_FOR_SPOOFING) {
+            if (siteTitle.toLowerCase().includes(brand) && !isTrusted) {
+              titleBrandMismatch = true;
+              break;
+            }
+          }
         }
 
-        const aiExplanation = hasFlags
-          ? `${siteDescription} However, the submitted URL "${displayUrl}" exhibits ${currentReasons.length} heuristic anomalies deviating from expected structure. These signals — including suspicious path segments, subdomain manipulation, or misleading URL patterns — are consistent with phishing infrastructure attempting to impersonate this brand. Do not submit credentials or personal information to this target.`
-          : `${siteDescription} The submitted URL "${displayUrl}" was scanned against heuristic models and known threat patterns. The domain structure, TLD, and path composition all conform to expected legitimate patterns. No deceptive subdomain nesting, typosquatting, or redirect chains were detected. This target is safe to access.`;
+        let threatLevel: string;
+        let confidenceScore: number;
+        let aiExplanation: string;
 
-        const result = { threatLevel: hasFlags ? 'HIGH RISK' : 'SAFE', confidenceScore: hasFlags ? 92 : 98, aiExplanation, detectedPatterns: currentReasons.map(r => r.id) };
+        if (severity === 'critical' || (severity === 'high' && titleBrandMismatch)) {
+          threatLevel = 'CRITICAL';
+          confidenceScore = 95;
+          aiExplanation = `CRITICAL THREAT DETECTED: The URL "${displayUrl}" exhibits ${flagCount} severe heuristic anomalies including: ${currentReasons.filter(r => r.severity === 'high').map(r => r.description).join('; ')}. ${titleBrandMismatch ? `Critically, the page claims to be "${siteTitle}" but is served from the unrelated domain "${apexDomain}" — a definitive indicator of a phishing attack. ` : ''}This URL is highly likely to be a phishing, scam, or malware delivery vector. DO NOT visit this URL or submit any personal information.`;
+        } else if (severity === 'high') {
+          threatLevel = 'HIGH RISK';
+          confidenceScore = 92;
+          aiExplanation = `HIGH RISK: The URL "${displayUrl}" was flagged with ${flagCount} threat indicators including: ${currentReasons.map(r => r.description).join('; ')}. ${siteTitle ? `The page is titled "${siteTitle}" but structural analysis reveals significant red flags. ` : ''}These patterns are strongly consistent with phishing infrastructure, brand impersonation, or malicious redirect chains. Do not interact with this URL or provide any sensitive information.`;
+        } else if (severity === 'medium') {
+          threatLevel = 'SUSPICIOUS';
+          confidenceScore = 78;
+          aiExplanation = `SUSPICIOUS: The URL "${displayUrl}" raised ${flagCount} moderate-severity concerns during analysis: ${currentReasons.map(r => r.description).join('; ')}. While not definitively malicious, these indicators suggest this URL may not be entirely trustworthy. Exercise caution — verify the domain independently before proceeding, and avoid entering credentials.`;
+        } else if (severity === 'low') {
+          threatLevel = 'LOW RISK';
+          confidenceScore = 72;
+          aiExplanation = `LOW RISK: The URL "${displayUrl}" passed most checks but has minor anomalies: ${currentReasons.map(r => r.description).join('; ')}. ${isTrusted ? `The apex domain "${apexDomain}" is a recognized, legitimate website. ` : ''}Proceed with general caution and verify the URL is exactly as expected before entering any personal information.`;
+        } else {
+          // Truly no flags + trusted domain = SAFE
+          if (isTrusted) {
+            const knownSiteDesc: Record<string, string> = {
+              'google.com': 'Google LLC, the world\'s leading search engine and technology company.',
+              'youtube.com': 'YouTube, Google\'s video-sharing platform with billions of users.',
+              'facebook.com': 'Facebook, Meta\'s global social networking platform.',
+              'amazon.com': 'Amazon Inc., the world\'s largest e-commerce and cloud services company.',
+              'microsoft.com': 'Microsoft Corporation, maker of Windows, Office 365, and Azure.',
+              'apple.com': 'Apple Inc., the maker of iPhone, Mac, and iCloud services.',
+              'paypal.com': 'PayPal Holdings Inc., a globally trusted digital payments platform.',
+              'github.com': 'GitHub (owned by Microsoft), the world\'s largest code hosting and collaboration platform.',
+              'linkedin.com': 'LinkedIn (owned by Microsoft), the professional networking platform.',
+            };
+            const siteDesc2 = siteTitle
+              ? `The domain is the official home of ${siteTitle}. ${siteDesc || ''}`
+              : (knownSiteDesc[apexDomain] ?? `"${apexDomain}" is a verified, trusted domain with a clean security profile.`);
+            threatLevel = 'SAFE';
+            confidenceScore = 97;
+            aiExplanation = `SAFE: The URL "${displayUrl}" passes all security checks. ${siteDesc2} The domain structure, TLD, and URL composition are all consistent with legitimate use. No phishing indicators, suspicious keywords, typosquatting patterns, or redirect anomalies were detected. This URL is safe to visit.`;
+          } else {
+            // No flags but domain is unknown — treat as low risk / suspicious
+            threatLevel = 'LOW RISK';
+            confidenceScore = 65;
+            aiExplanation = `LOW RISK: The URL "${displayUrl}" did not trigger any specific heuristic flags, but the domain "${apexDomain}" is not a widely recognized or verified website. ${siteTitle ? `The page is titled "${siteTitle}". ` : ''}While no overt threat patterns were detected, unverified domains should be treated with caution. Verify the website's authenticity independently before proceeding.`;
+          }
+        }
+
+        const result = { threatLevel, confidenceScore, aiExplanation, detectedPatterns: currentReasons.map(r => r.id) };
         threatMemoryService.logThreat(rawContext, contextType, result.threatLevel, result.detectedPatterns);
         return result;
       }
 
       // ── EMAIL fallback ──
       if (contextType === 'EMAIL') {
-        // Parse email from enriched context
         let email = rawContext;
-        let domain = '';
+        let domainRaw = '';
         let localPart = '';
         try {
           const emailLine = rawContext.split('\n').find(l => l.startsWith('Email Address:'));
           email = emailLine ? emailLine.replace('Email Address:', '').trim() : rawContext;
-          [localPart, domain] = email.includes('@') ? email.split('@') : [email, ''];
+          [localPart, domainRaw] = email.includes('@') ? email.split('@') : [email, ''];
         } catch { /* keep raw */ }
 
-        const knownEmailDomains: Record<string, string> = {
-          'gmail.com': 'Gmail (gmail.com) is Google\'s free email service, used by over 1.8 billion people worldwide.',
-          'googlemail.com': 'Googlemail.com is an alias for Gmail, Google\'s free email platform.',
-          'outlook.com': 'Outlook.com is Microsoft\'s consumer email service, part of the Microsoft 365 ecosystem.',
-          'hotmail.com': 'Hotmail.com is a legacy Microsoft email domain, now operating under the Outlook platform.',
-          'live.com': 'Live.com is a Microsoft email domain, part of the legacy Windows Live and Outlook platform.',
-          'yahoo.com': 'Yahoo.com is Yahoo\'s free email service, one of the oldest web-based email providers.',
-          'icloud.com': 'iCloud.com is Apple\'s email and cloud service, integrated with all Apple devices.',
-          'me.com': 'Me.com is an Apple iCloud email alias used on Apple devices.',
-          'protonmail.com': 'ProtonMail.com is a privacy-focused, end-to-end encrypted email service based in Switzerland.',
-          'proton.me': 'Proton.me is the primary domain of Proton Mail, a secure encrypted email provider.',
-          'paypal.com': 'PayPal.com is the official domain of PayPal Holdings Inc., a global digital payments platform.',
-          'amazon.com': 'Amazon.com is the official domain of Amazon Inc., the world\'s largest e-commerce company.',
-          'apple.com': 'Apple.com is the official corporate domain of Apple Inc., used for official Apple communications.',
-          'microsoft.com': 'Microsoft.com is the official corporate domain of Microsoft Corporation.',
-          'support.microsoft.com': 'Support.microsoft.com is an official Microsoft subdomain used for customer support communications.',
-          'no-reply.accounts.google.com': 'This is an official Google no-reply address used for automated account notifications.',
-          'tempmail.com': 'TempMail.com is a disposable temporary email service, often used to avoid spam or hide identity.',
-          'mailinator.com': 'Mailinator.com is a public disposable email service where anyone can read messages — commonly used in fraud.',
-          'guerrillamail.com': 'GuerillaMail is a disposable anonymous email provider, a strong indicator of suspicious activity.',
-          '10minutemail.com': '10MinuteMail provides temporary email addresses that expire after 10 minutes, commonly used to bypass verification.',
-        };
+        const lowerDomain = domainRaw.toLowerCase();
+        const lowerLocal = localPart.toLowerCase();
+        const isTrustedDomain = TRUSTED_EMAIL_DOMAINS.has(lowerDomain);
+        const isDisposable = DISPOSABLE_EMAIL_DOMAINS.has(lowerDomain);
+        const isPublicFree = PUBLIC_FREE_DOMAINS.has(lowerDomain);
 
-        const domainDescription = domain ? (knownEmailDomains[domain.toLowerCase()] ?? `The domain "${domain}" is not a widely recognized email provider.`) : '';
+        // Check brand spoofing from public domain
+        const hasBrandSpoofing = isPublicFree && BRAND_KEYWORDS_FOR_SPOOFING.some(b => lowerLocal.includes(b));
+        // Check brand in suspicious non-trusted domain
+        const hasDomainBrandAbuse = !isTrustedDomain && !isPublicFree && BRAND_KEYWORDS_FOR_SPOOFING.some(b => lowerDomain.includes(b));
 
-        const aiExplanation = hasFlags
-          ? `The email address "${email}" was flagged during analysis. ${domainDescription} The local part "${localPart}" combined with ${currentReasons.length} heuristic anomalies raises significant concerns about the legitimacy of this sender. Patterns suggest this address may be used for phishing, fraud, or impersonation campaigns. Do not click links or download attachments from this sender.`
-          : `The email address "${email}" was analyzed for authenticity and threat indicators. ${domainDescription} The username pattern "${localPart}" is structurally consistent with legitimate use of this email provider. No spoofing signals, disposable domain flags, or impersonation patterns were detected. This email address appears genuine.`;
+        let threatLevel: string;
+        let confidenceScore: number;
+        let aiExplanation: string;
 
-        const result = { threatLevel: hasFlags ? 'HIGH RISK' : 'SAFE', confidenceScore: hasFlags ? 91 : 97, aiExplanation, detectedPatterns: currentReasons.map(r => r.id) };
+        if (isDisposable || severity === 'critical') {
+          threatLevel = 'CRITICAL';
+          confidenceScore = 97;
+          aiExplanation = isDisposable
+            ? `CRITICAL THREAT: The email address "${email}" uses "${lowerDomain}" — a well-known disposable/temporary email provider. These services are specifically designed to avoid accountability and are overwhelmingly associated with fraud, spam, phishing, and account abuse. Any communication from this sender should be treated as highly suspicious. Do not click any links or attachments from this sender.`
+            : `CRITICAL THREAT: The email address "${email}" triggered ${flagCount} critical threat indicators: ${currentReasons.filter(r => r.severity === 'high').map(r => r.description).join('; ')}. This sender exhibits multiple high-severity fraud signals. Do not engage with any communications from this address.`;
+        } else if (hasBrandSpoofing || hasDomainBrandAbuse || severity === 'high') {
+          threatLevel = 'HIGH RISK';
+          confidenceScore = 93;
+          if (hasBrandSpoofing) {
+            const brand = BRAND_KEYWORDS_FOR_SPOOFING.find(b => lowerLocal.includes(b)) || 'a known brand';
+            aiExplanation = `HIGH RISK — BRAND SPOOFING: The email address "${email}" is impersonating "${brand}" by using its name in the username of a free public email service (${lowerDomain}). This is a classic and well-known phishing technique. Legitimate companies like PayPal, Apple, Amazon, and Microsoft NEVER send official communications from free email providers like Gmail, Yahoo, or Outlook. This email is almost certainly fraudulent. Do not click any links or follow any instructions from this sender.`;
+          } else if (hasDomainBrandAbuse) {
+            const brand = BRAND_KEYWORDS_FOR_SPOOFING.find(b => lowerDomain.includes(b)) || 'a known brand';
+            aiExplanation = `HIGH RISK — DOMAIN IMPERSONATION: The email address "${email}" uses a suspicious domain "${lowerDomain}" that contains the brand name "${brand}" but is NOT the official domain of that company. This is a domain spoofing attack designed to trick victims into believing the email is from a trusted source. The official domains of major companies are short and clean (e.g., @paypal.com, @apple.com) — not hyphenated variants like this. Treat this email as fraudulent.`;
+          } else {
+            aiExplanation = `HIGH RISK: The email address "${email}" exhibits ${flagCount} significant threat indicators: ${currentReasons.map(r => r.description).join('; ')}. These signals collectively suggest this sender is not legitimate and may be attempting fraud, phishing, or impersonation. Do not click links or respond to this sender.`;
+          }
+        } else if (severity === 'medium' || (!isTrustedDomain && !isPublicFree)) {
+          threatLevel = 'SUSPICIOUS';
+          confidenceScore = 75;
+          aiExplanation = !isTrustedDomain && !isPublicFree && flagCount === 0
+            ? `SUSPICIOUS: The email address "${email}" uses the domain "${lowerDomain}" which is not a recognized, verified email provider or official corporate domain. While no specific fraud patterns were detected in the username, emails from unverified domains should be treated with caution. Verify the sender's identity through independent channels before responding or clicking any links.`
+            : `SUSPICIOUS: The email address "${email}" raised ${flagCount} concerns during analysis: ${currentReasons.map(r => r.description).join('; ')}. Exercise caution before trusting communications from this sender.`;
+        } else {
+          // Trusted domain, no flags
+          threatLevel = 'SAFE';
+          confidenceScore = 96;
+          const domainDescriptions: Record<string, string> = {
+            'gmail.com': 'Gmail (gmail.com) is Google\'s trusted email service used by over 1.8 billion people.',
+            'outlook.com': 'Outlook.com is Microsoft\'s trusted consumer email service.',
+            'yahoo.com': 'Yahoo Mail is one of the world\'s oldest and most widely used email providers.',
+            'icloud.com': 'iCloud.com is Apple\'s official email service for Apple device users.',
+            'protonmail.com': 'ProtonMail is a privacy-focused, end-to-end encrypted email provider based in Switzerland.',
+            'proton.me': 'Proton.me is the primary domain of ProtonMail, a trusted encrypted email provider.',
+            'paypal.com': 'paypal.com is the official corporate domain of PayPal Holdings Inc.',
+            'apple.com': 'apple.com is the official corporate domain of Apple Inc.',
+            'amazon.com': 'amazon.com is the official corporate domain of Amazon Inc.',
+            'microsoft.com': 'microsoft.com is the official corporate domain of Microsoft Corporation.',
+            'google.com': 'google.com is the official corporate domain of Google LLC.',
+          };
+          const domainDesc = domainDescriptions[lowerDomain] ?? `"${lowerDomain}" is a recognized, trusted email provider.`;
+          aiExplanation = `SAFE: The email address "${email}" passes all security checks. ${domainDesc} The username "${localPart}" follows natural patterns consistent with legitimate use. No spoofing indicators, disposable domain flags, brand impersonation signals, or fraud patterns were detected. This email address appears genuine.`;
+        }
+
+        const result = { threatLevel, confidenceScore, aiExplanation, detectedPatterns: currentReasons.map(r => r.id) };
         threatMemoryService.logThreat(rawContext, contextType, result.threatLevel, result.detectedPatterns);
         return result;
       }
@@ -163,17 +284,33 @@ export class ThreatReasoningAgent {
           const ocrStart = rawContext.indexOf('"""');
           const ocrEnd = rawContext.lastIndexOf('"""');
           if (ocrStart !== -1 && ocrEnd > ocrStart + 3) {
-            ocrPreview = rawContext.substring(ocrStart + 3, ocrEnd).trim().substring(0, 200);
+            ocrPreview = rawContext.substring(ocrStart + 3, ocrEnd).trim().substring(0, 300);
           }
         } catch { /* keep */ }
 
         const hasOCR = ocrPreview.length > 0;
 
-        const aiExplanation = hasFlags
-          ? `The image "${filename}" was analyzed and ${currentReasons.length} threat indicators were detected. ${hasOCR ? `The extracted text contains: "${ocrPreview}..." — ` : ''}Heuristic analysis flagged patterns consistent with phishing content, including urgency-based language, credential harvesting forms, or brand impersonation. This image likely originates from a fraudulent source. Do not follow any instructions shown in this image.`
-          : `The image "${filename}" was scanned for visual phishing indicators and suspicious content. ${hasOCR ? `Extracted text preview: "${ocrPreview}..."` : 'No readable text was detected in this image.'} No harmful patterns, fake login forms, payment scams, or impersonation attempts were identified. The image content appears benign based on available analysis.`;
+        let threatLevel: string;
+        let confidenceScore: number;
+        let aiExplanation: string;
 
-        const result = { threatLevel: hasFlags ? 'HIGH RISK' : 'SAFE', confidenceScore: hasFlags ? 89 : 94, aiExplanation, detectedPatterns: currentReasons.map(r => r.id) };
+        if (severity === 'critical' || severity === 'high') {
+          threatLevel = 'HIGH RISK';
+          confidenceScore = 91;
+          const highFlags = currentReasons.filter(r => r.severity === 'high').map(r => r.description).join('; ');
+          aiExplanation = `HIGH RISK — BAD MAIL / PHISHING IMAGE: The image "${filename}" contains ${flagCount} threat indicators including: ${highFlags}. ${hasOCR ? `The extracted text "${ocrPreview.substring(0, 150)}..." contains patterns consistent with phishing content — ` : ''}Heuristic analysis detected urgency manipulation, credential harvesting requests, or brand impersonation. This image likely originates from a fraudulent source designed to deceive victims. Do not follow any instructions shown in this image, and report it as phishing. BAD MAIL.`;
+        } else if (severity === 'medium') {
+          threatLevel = 'SUSPICIOUS';
+          confidenceScore = 74;
+          aiExplanation = `SUSPICIOUS: The image "${filename}" raised ${flagCount} moderate concerns during analysis. ${hasOCR ? `Extracted text preview: "${ocrPreview.substring(0, 150)}..." — ` : ''}Some patterns were detected that may indicate suspicious intent. Exercise caution and do not provide any personal information based on instructions in this image.`;
+        } else {
+          // No significant flags
+          threatLevel = 'SAFE';
+          confidenceScore = 88;
+          aiExplanation = `SAFE — GOOD MAIL / BENIGN IMAGE: The image "${filename}" was scanned for visual phishing indicators, credential harvesting patterns, and brand impersonation attempts. ${hasOCR ? `Extracted text: "${ocrPreview.substring(0, 150)}..." — no harmful content detected. ` : 'No readable text was detected in this image. '}No urgent language, fake login forms, payment scam indicators, or impersonation patterns were identified. The image content appears benign. GOOD MAIL.`;
+        }
+
+        const result = { threatLevel, confidenceScore, aiExplanation, detectedPatterns: currentReasons.map(r => r.id) };
         threatMemoryService.logThreat(rawContext, contextType, result.threatLevel, result.detectedPatterns);
         return result;
       }
