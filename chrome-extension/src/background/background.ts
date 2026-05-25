@@ -244,8 +244,37 @@ function updateExtensionBadge(status: string, tabId?: number) {
   chrome.action.setBadgeBackgroundColor({ color, tabId });
 }
 
+async function ensureContentScriptInjected(tabId: number, url: string) {
+  if (!url || !url.startsWith('http')) return;
+  
+  chrome.tabs.sendMessage(tabId, { action: 'ping' }, async (response) => {
+    if (chrome.runtime.lastError || !response || response.status !== 'pong') {
+      try {
+        await chrome.scripting.executeScript({
+          target: { tabId },
+          files: ['content.js']
+        });
+        
+        const cleanUrl = url.split('#')[0];
+        const cached = scanCache.get(cleanUrl);
+        if (cached) {
+          setTimeout(() => {
+            chrome.tabs.sendMessage(tabId, { action: 'showScanResult', result: cached }).catch(() => {});
+          }, 150);
+        }
+      } catch (err) {
+        console.warn(`[URL SYSTEM SHIELD] Content script auto-injection skipped for tab ${tabId}:`, err);
+      }
+    }
+  });
+}
+
 // Automatically scan active tab when url changes
 chrome.tabs.onUpdated.addListener((tabId, changeInfo, tab) => {
+  if (changeInfo.status === 'complete' && tab.url && tab.url.startsWith('http')) {
+    ensureContentScriptInjected(tabId, tab.url);
+  }
+
   if (changeInfo.url) {
     if (!changeInfo.url.startsWith('http')) {
       chrome.action.setBadgeText({ text: '', tabId });
@@ -268,6 +297,8 @@ chrome.tabs.onActivated.addListener((activeInfo) => {
     if (!tab.url.startsWith('http')) {
       chrome.action.setBadgeText({ text: '', tabId: activeInfo.tabId });
     } else {
+      ensureContentScriptInjected(activeInfo.tabId, tab.url);
+      
       const cleanUrl = tab.url.split('#')[0];
       const cached = scanCache.get(cleanUrl);
       if (cached) {

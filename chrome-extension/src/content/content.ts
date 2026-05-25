@@ -196,11 +196,15 @@
         opacity: 0;
         transform: translateX(10px);
         transition: all 0.3s ease;
+        position: absolute;
+        pointer-events: none;
       }
 
       .shield-badge:hover .shield-label {
         opacity: 1;
         transform: translateX(0);
+        position: static;
+        pointer-events: auto;
       }
 
       .shield-badge.safe .shield-label { color: var(--color-safe); }
@@ -215,10 +219,14 @@
         opacity: 0;
         transition: opacity 0.2s;
         margin-left: 4px;
+        position: absolute;
+        pointer-events: none;
       }
 
       .shield-badge:hover .shield-close {
         opacity: 1;
+        position: static;
+        pointer-events: auto;
       }
 
       .shield-close:hover {
