@@ -89,8 +89,8 @@
     const host = document.createElement('div');
     host.id = 'url-system-shield-host';
     host.style.position = 'fixed';
-    host.style.top = '16px';
-    host.style.right = '16px';
+    host.style.top = '8px';
+    host.style.right = '8px';
     host.style.zIndex = '2147483647'; // Max z-index
     host.style.fontFamily = "'Outfit', sans-serif";
     document.body.appendChild(host);
@@ -462,14 +462,14 @@
     // Make the host draggable
     let isDragging = false;
     let startY = 0;
-    let startTop = 16;
+    let startTop = 8;
 
     badge.addEventListener('mousedown', (e) => {
       // Only drag with left-click, and don't drag if clicking close button
       if (e.button !== 0 || (e.target as HTMLElement).classList.contains('shield-close')) return;
       isDragging = true;
       startY = e.clientY;
-      startTop = parseInt(host.style.top || '16', 10);
+      startTop = parseInt(host.style.top || '8', 10);
       e.preventDefault();
     });
 
