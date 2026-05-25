@@ -219,6 +219,7 @@ async function analyzeImageText(ocrText: string, filename: string) {
       confidence: 75,
       riskLevel: score >= 45 ? 'HIGH' : (score > 0 ? 'MEDIUM' : 'LOW'),
       reasons,
+      threatScore: score,
       aiExplanation: `[LOCAL HEURISTICS] URL SYSTEM server is offline. Local Image Heuristics scan completed.\n\nExtracted OCR Text length: ${ocrText.length} characters.\nUrgency indicators: ${hasUrgent ? 'YES' : 'NO'}\nPhishing keywords: ${hasPhish ? 'YES' : 'NO'}\n\nStart URL SYSTEM backend to run Ollama AI reasoning.`
     };
   }
@@ -342,6 +343,7 @@ async function handleAnalyzeRegion(coords: any) {
           confidence: 70,
           riskLevel: 'MEDIUM',
           reasons: [{ id: 'OFFLINE_REGION_SCAN', description: 'Backend server is required to analyze image context.', severity: 'medium' }],
+          threatScore: 50,
           aiExplanation: `[OFFLINE] Could not analyze the selected region because the URL SYSTEM backend is offline.\n\nPlease start the server (npm run dev:all) to run local server-side OCR and Ollama AI scanning.`
         });
       }

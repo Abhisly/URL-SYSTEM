@@ -85,6 +85,12 @@
     const reasons = result.reasons || [];
     const explanation = result.aiExplanation || 'No report explanation available.';
 
+    // 0. Remove any existing host element to prevent double-dot glitch
+    const existing = document.getElementById('url-system-shield-host');
+    if (existing) {
+      existing.remove();
+    }
+
     // 1. Create Host Element
     const host = document.createElement('div');
     host.id = 'url-system-shield-host';
