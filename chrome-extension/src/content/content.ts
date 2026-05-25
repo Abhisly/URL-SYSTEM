@@ -167,7 +167,7 @@
 
       .shield-dot.safe { background-color: var(--color-safe); box-shadow: 0 0 10px var(--color-safe-glow); }
       .shield-dot.suspicious { background-color: var(--color-suspicious); box-shadow: 0 0 10px var(--color-suspicious-glow); }
-      .shield-dot.phishing { background-color: var(--color-phishing); box-shadow: 0 0 10px var(--color-phishing-glow); }
+      .shield-dot.phishing, .shield-dot.malicious { background-color: var(--color-phishing); box-shadow: 0 0 10px var(--color-phishing-glow); }
 
       .shield-dot::after {
         content: '';
@@ -205,7 +205,7 @@
 
       .shield-badge.safe .shield-label { color: var(--color-safe); }
       .shield-badge.suspicious .shield-label { color: var(--color-suspicious); }
-      .shield-badge.phishing .shield-label { color: var(--color-phishing); }
+      .shield-badge.phishing .shield-label, .shield-badge.malicious .shield-label { color: var(--color-phishing); }
 
       /* Close button */
       .shield-close {
@@ -294,7 +294,7 @@
 
       .verdict-tag.safe { color: var(--color-safe); text-shadow: 0 0 10px var(--color-safe-glow); }
       .verdict-tag.suspicious { color: var(--color-suspicious); text-shadow: 0 0 10px var(--color-suspicious-glow); }
-      .verdict-tag.phishing { color: var(--color-phishing); text-shadow: 0 0 10px var(--color-phishing-glow); }
+      .verdict-tag.phishing, .verdict-tag.malicious { color: var(--color-phishing); text-shadow: 0 0 10px var(--color-phishing-glow); }
 
       .verdict-meta {
         font-size: 10px;

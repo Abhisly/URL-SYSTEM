@@ -14,6 +14,12 @@ const scanCache = new Map<string, any>();
 
 // Message listeners
 chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
+  if (request.action === 'getCachedResult') {
+    const cleanUrl = request.url.split('#')[0];
+    sendResponse(scanCache.get(cleanUrl) || null);
+    return true;
+  }
+
   if (request.action === 'scanUrl') {
     const tabId = sender.tab?.id;
     handleScanUrl(request.url, tabId)

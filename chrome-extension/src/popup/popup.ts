@@ -67,28 +67,34 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
   });
 
-  // 3. Trigger URL Scan
-  verdictTextEl.textContent = 'SCANNING...';
-  verdictTextEl.className = 'verdict-value unknown';
-  headerStatusDot.className = 'pulse-dot grey';
-  aiReportTextEl.innerHTML = '<span class="loading-pulse">Auditing website signatures, DNS, and SSL layers...</span>';
-
-  chrome.runtime.sendMessage({ action: 'scanUrl', url: activeTabUrl }, (result) => {
-    if (!result || result.error) {
-      verdictTextEl.textContent = 'SCAN ERROR';
+  // 3. Check Cache First to Avoid Lag/Loader Flashing
+  chrome.runtime.sendMessage({ action: 'getCachedResult', url: activeTabUrl }, (cachedResult) => {
+    if (cachedResult) {
+      analyzeBtn.disabled = false;
+      analyzeRegionBtn.disabled = false;
+      renderScanResults(cachedResult);
+    } else {
+      // Trigger new URL Scan
+      verdictTextEl.textContent = 'SCANNING...';
       verdictTextEl.className = 'verdict-value unknown';
-      aiReportTextEl.textContent = result?.message || 'Connection to the scanning core failed.';
-      analyzeBtn.disabled = true;
-      analyzeRegionBtn.disabled = true;
-      return;
+      headerStatusDot.className = 'pulse-dot grey';
+      aiReportTextEl.innerHTML = '<span class="loading-pulse">Auditing website signatures, DNS, and SSL layers...</span>';
+
+      chrome.runtime.sendMessage({ action: 'scanUrl', url: activeTabUrl }, (result) => {
+        if (!result || result.error) {
+          verdictTextEl.textContent = 'SCAN ERROR';
+          verdictTextEl.className = 'verdict-value unknown';
+          aiReportTextEl.textContent = result?.message || 'Connection to the scanning core failed.';
+          analyzeBtn.disabled = true;
+          analyzeRegionBtn.disabled = true;
+          return;
+        }
+
+        analyzeBtn.disabled = false;
+        analyzeRegionBtn.disabled = false;
+        renderScanResults(result);
+      });
     }
-
-    // Enable screenshot analysis if it is a standard webpage
-    analyzeBtn.disabled = false;
-    analyzeRegionBtn.disabled = false;
-
-    // Render results
-    renderScanResults(result);
   });
 
   // 4. Handle Screenshot Analysis Action

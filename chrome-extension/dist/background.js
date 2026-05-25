@@ -146,22 +146,22 @@ function T(t) {
   let e = 0;
   const i = [];
   try {
-    const s = new URL(t.startsWith("http") ? t : `https://${t}`), n = s.hostname.toLowerCase(), r = E(n), d = f.has(r);
-    s.protocol !== "https:" && (e += 20, i.push({ id: "HTTP_NO_SECURE", description: "URL uses insecure HTTP protocol", severity: "medium" })), t.length > 100 ? (e += 20, i.push({ id: "LONG_URL", description: `URL is very long (${t.length} chars) — likely obfuscating destination`, severity: "medium" })) : t.length > 75 && (e += 10, i.push({ id: "LONG_URL", description: "URL is unusually long (potential obfuscation)", severity: "low" })), /^(\d{1,3}\.){3}\d{1,3}$/.test(n) && (e += 45, i.push({ id: "IP_HOSTNAME", description: "URL uses raw IP address instead of domain name", severity: "high" }));
+    const r = new URL(t.startsWith("http") ? t : `https://${t}`), n = r.hostname.toLowerCase(), s = E(n), d = f.has(s);
+    r.protocol !== "https:" && (e += 20, i.push({ id: "HTTP_NO_SECURE", description: "URL uses insecure HTTP protocol", severity: "medium" })), t.length > 100 ? (e += 20, i.push({ id: "LONG_URL", description: `URL is very long (${t.length} chars) — likely obfuscating destination`, severity: "medium" })) : t.length > 75 && (e += 10, i.push({ id: "LONG_URL", description: "URL is unusually long (potential obfuscation)", severity: "low" })), /^(\d{1,3}\.){3}\d{1,3}$/.test(n) && (e += 45, i.push({ id: "IP_HOSTNAME", description: "URL uses raw IP address instead of domain name", severity: "high" }));
     const c = n.split(".");
     if (c.length >= 5 && (e += 30, i.push({ id: "EXCESSIVE_SUBDOMAINS", description: `Extremely nested subdomains (${c.length} levels)`, severity: "high" })), !d) {
       for (const l of U)
         if (n.includes(l)) {
           e += 50, i.push({
             id: "BRAND_IMPERSONATION",
-            description: `Non-trusted domain "${r}" contains brand keyword "${l}" — likely impersonation`,
+            description: `Non-trusted domain "${s}" contains brand keyword "${l}" — likely impersonation`,
             severity: "high"
           });
           break;
         }
     }
-    for (const [l, u] of Object.entries(I))
-      if (u.test(n) && !f.has(r)) {
+    for (const [l, m] of Object.entries(I))
+      if (m.test(n) && !f.has(s)) {
         e += 55, i.push({
           id: "TYPOSQUATTING",
           description: `Domain appears to be a typosquat of "${l}" using character substitution`,
@@ -182,11 +182,11 @@ function T(t) {
     const L = (n.match(/-/g) || []).length;
     if (L >= 3 && (e += 20, i.push({ id: "MULTIPLE_HYPHENS", description: `Domain contains ${L} hyphens (phishing indicator)`, severity: "medium" })), !d && c.length >= 3) {
       const l = c.slice(0, -2).join(".");
-      for (const u of f)
-        if (l.includes(u.replace(".", "-")) || l.includes(u)) {
+      for (const m of f)
+        if (l.includes(m.replace(".", "-")) || l.includes(m)) {
           e += 65, i.push({
             id: "DECEPTIVE_SUBDOMAIN",
-            description: `Trusted brand "${u}" is used in subdomain to disguise malicious domain "${r}"`,
+            description: `Trusted brand "${m}" is used in subdomain to disguise malicious domain "${s}"`,
             severity: "high"
           });
           break;
@@ -200,16 +200,20 @@ function T(t) {
   let o = "LOW", a = "SAFE";
   return e >= 75 ? (o = "CRITICAL", a = "MALICIOUS") : e >= 45 ? (o = "HIGH", a = "MALICIOUS") : e >= 20 && (o = "MEDIUM", a = "SUSPICIOUS"), { score: e, reasons: i, riskLevel: o, status: a };
 }
-let h = "http://localhost:3000";
+let u = "http://localhost:3000";
 chrome.storage.local.get(["backendUrl"], (t) => {
-  t.backendUrl && (h = t.backendUrl, console.log("[URL SYSTEM SHIELD] Loaded backend URL from storage:", h));
+  t.backendUrl && (u = t.backendUrl, console.log("[URL SYSTEM SHIELD] Loaded backend URL from storage:", u));
 });
-const m = /* @__PURE__ */ new Map();
+const h = /* @__PURE__ */ new Map();
 chrome.runtime.onMessage.addListener((t, e, i) => {
   var o;
+  if (t.action === "getCachedResult") {
+    const a = t.url.split("#")[0];
+    return i(h.get(a) || null), !0;
+  }
   if (t.action === "scanUrl") {
     const a = (o = e.tab) == null ? void 0 : o.id;
-    return g(t.url, a).then(i).catch((s) => i({ error: !0, message: s.message })), !0;
+    return g(t.url, a).then(i).catch((r) => i({ error: !0, message: r.message })), !0;
   }
   if (t.action === "checkServer")
     return v().then(i).catch(() => i({ online: !1 })), !0;
@@ -222,7 +226,7 @@ chrome.runtime.onMessage.addListener((t, e, i) => {
   if (t.action === "registerBackend") {
     const a = t.url;
     return a && (a.startsWith("http://localhost") || a.includes("vercel.app") || a.includes("127.0.0.1")) ? (chrome.storage.local.set({ backendUrl: a }, () => {
-      h = a, console.log("[URL SYSTEM SHIELD] Successfully registered backend URL:", a), i({ success: !0, backendUrl: a });
+      u = a, console.log("[URL SYSTEM SHIELD] Successfully registered backend URL:", a), i({ success: !0, backendUrl: a });
     }), !0) : (i({ success: !1 }), !0);
   }
   if (t.action === "analyzeRegion")
@@ -238,17 +242,17 @@ async function g(t, e) {
       threatScore: 0,
       aiExplanation: "Aborted: The extension only scans HTTP or HTTPS pages."
     };
-  function i(a, s) {
-    a !== void 0 && chrome.tabs.sendMessage(a, { action: "showScanResult", result: s }).catch(() => {
+  function i(a, r) {
+    a !== void 0 && chrome.tabs.sendMessage(a, { action: "showScanResult", result: r }).catch(() => {
     });
   }
   const o = t.split("#")[0];
-  if (m.has(o)) {
-    const a = m.get(o);
+  if (h.has(o)) {
+    const a = h.get(o);
     return e !== void 0 && (p(a.status, e), i(e, a)), a;
   }
   try {
-    const a = await fetch(`${h}/api/scan-url`, {
+    const a = await fetch(`${u}/api/scan-url`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json"
@@ -256,25 +260,25 @@ async function g(t, e) {
       body: JSON.stringify({ url: o })
     });
     if (a.ok) {
-      const s = await a.json();
-      return m.set(o, s), p(s.status, e), i(e, s), s;
+      const r = await a.json();
+      return h.set(o, r), p(r.status, e), i(e, r), r;
     }
     throw new Error("Server returned error status");
   } catch (a) {
     console.warn("[URL SYSTEM SHIELD] Backend offline or fetch error. Falling back to local Heuristics.", a);
-    const s = k(o);
-    if (!s.isValid) {
+    const r = k(o);
+    if (!r.isValid) {
       const d = {
         status: "INVALID",
         confidence: 100,
         riskLevel: "LOW",
-        reasons: [{ id: "INVALID_URL_FORMAT", description: s.reason || "Invalid format", severity: "high" }],
+        reasons: [{ id: "INVALID_URL_FORMAT", description: r.reason || "Invalid format", severity: "high" }],
         threatScore: 0,
         aiExplanation: "Aborted: Local validation failed."
       };
       return i(e, d), d;
     }
-    const n = T(o), r = {
+    const n = T(o), s = {
       status: n.status,
       confidence: 80,
       // High confidence in heuristics
@@ -285,13 +289,13 @@ async function g(t, e) {
 
 Heuristic scan evaluated this URL score at ${n.score}/100 based on ${n.reasons.length} warning indicators.`
     };
-    return m.set(o, r), p(r.status, e), i(e, r), r;
+    return h.set(o, s), p(s.status, e), i(e, s), s;
   }
 }
 async function v() {
   var t;
   try {
-    const e = await fetch(`${h}/api/system-status`, { signal: AbortSignal.timeout(2e3) });
+    const e = await fetch(`${u}/api/system-status`, { signal: AbortSignal.timeout(2e3) });
     if (e.ok)
       return { online: !0, aiConnected: ((t = (await e.json()).services) == null ? void 0 : t.ai_orchestrator) === "online" };
   } catch {
@@ -300,7 +304,7 @@ async function v() {
 }
 async function O(t, e) {
   try {
-    const i = await fetch(`${h}/api/analyze-image`, {
+    const i = await fetch(`${u}/api/analyze-image`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json"
@@ -312,19 +316,19 @@ async function O(t, e) {
     throw new Error("Failed to analyze image content via API.");
   } catch (i) {
     console.warn("[URL SYSTEM SHIELD] Image Analysis API offline. Performing local heuristic analysis.", i);
-    const o = t.toLowerCase(), a = /urgent|verify|suspend|limited|reset|security|unusual/i.test(o), s = /login|password|signin|credentials|bank|wallet/i.test(o);
+    const o = t.toLowerCase(), a = /urgent|verify|suspend|limited|reset|security|unusual/i.test(o), r = /login|password|signin|credentials|bank|wallet/i.test(o);
     let n = 0;
-    const r = [];
-    return a && (n += 35, r.push({ id: "URGENCY_MANIPULATION", description: "OCR text contains high-urgency keywords", severity: "medium" })), s && (n += 45, r.push({ id: "CREDENTIAL_HARVESTING", description: "OCR text requests sensitive credentials or login details", severity: "high" })), {
+    const s = [];
+    return a && (n += 35, s.push({ id: "URGENCY_MANIPULATION", description: "OCR text contains high-urgency keywords", severity: "medium" })), r && (n += 45, s.push({ id: "CREDENTIAL_HARVESTING", description: "OCR text requests sensitive credentials or login details", severity: "high" })), {
       status: n >= 45 ? "MALICIOUS" : n > 0 ? "SUSPICIOUS" : "SAFE",
       confidence: 75,
       riskLevel: n >= 45 ? "HIGH" : n > 0 ? "MEDIUM" : "LOW",
-      reasons: r,
+      reasons: s,
       aiExplanation: `[LOCAL HEURISTICS] URL SYSTEM server is offline. Local Image Heuristics scan completed.
 
 Extracted OCR Text length: ${t.length} characters.
 Urgency indicators: ${a ? "YES" : "NO"}
-Phishing keywords: ${s ? "YES" : "NO"}
+Phishing keywords: ${r ? "YES" : "NO"}
 
 Start URL SYSTEM backend to run Ollama AI reasoning.`
     };
@@ -348,7 +352,7 @@ chrome.tabs.onActivated.addListener((t) => {
     if (!e.url.startsWith("http"))
       chrome.action.setBadgeText({ text: "", tabId: t.tabId });
     else {
-      const i = e.url.split("#")[0], o = m.get(i);
+      const i = e.url.split("#")[0], o = h.get(i);
       o ? (p(o.status, t.tabId), notifyTab(t.tabId, o)) : (chrome.action.setBadgeText({ text: "", tabId: t.tabId }), g(e.url, t.tabId).catch(() => {
       }));
     }
@@ -362,16 +366,16 @@ async function A(t) {
         return;
       }
       try {
-        const a = await x(o, t), s = await fetch(`${h}/api/analyze-image`, {
+        const a = await x(o, t), r = await fetch(`${u}/api/analyze-image`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ image: a, filename: "region_capture.png" })
         });
-        if (s.ok) {
-          const n = await s.json();
+        if (r.ok) {
+          const n = await r.json();
           e(n);
         } else {
-          const n = await s.json().catch(() => ({}));
+          const n = await r.json().catch(() => ({}));
           throw new Error(n.message || "Failed to analyze region.");
         }
       } catch (a) {
@@ -389,8 +393,8 @@ Please start the server (npm run dev:all) to run local server-side OCR and Ollam
   });
 }
 async function x(t, e) {
-  const o = await (await fetch(t)).blob(), a = await createImageBitmap(o), s = new OffscreenCanvas(e.width, e.height);
-  s.getContext("2d").drawImage(
+  const o = await (await fetch(t)).blob(), a = await createImageBitmap(o), r = new OffscreenCanvas(e.width, e.height);
+  r.getContext("2d").drawImage(
     a,
     e.x * e.dpr,
     e.y * e.dpr,
@@ -401,9 +405,9 @@ async function x(t, e) {
     e.width,
     e.height
   );
-  const r = await s.convertToBlob({ type: "image/png" });
+  const s = await r.convertToBlob({ type: "image/png" });
   return new Promise((d, S) => {
     const c = new FileReader();
-    c.onloadend = () => d(c.result), c.onerror = S, c.readAsDataURL(r);
+    c.onloadend = () => d(c.result), c.onerror = S, c.readAsDataURL(s);
   });
 }

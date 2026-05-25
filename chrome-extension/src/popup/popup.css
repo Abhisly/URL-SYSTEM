@@ -108,7 +108,7 @@ body {
 
 .pulse-dot.safe { background-color: var(--color-safe); box-shadow: 0 0 8px var(--color-safe-glow); }
 .pulse-dot.suspicious { background-color: var(--color-suspicious); box-shadow: 0 0 8px var(--color-suspicious-glow); }
-.pulse-dot.phishing { background-color: var(--color-phishing); box-shadow: 0 0 8px var(--color-phishing-glow); }
+.pulse-dot.phishing, .pulse-dot.malicious { background-color: var(--color-phishing); box-shadow: 0 0 8px var(--color-phishing-glow); }
 .pulse-dot.grey { background-color: var(--color-unknown); }
 
 .pulse-dot::after {
@@ -200,7 +200,7 @@ body {
 
 .verdict-value.safe { color: var(--color-safe); text-shadow: 0 0 10px var(--color-safe-glow); }
 .verdict-value.suspicious { color: var(--color-suspicious); text-shadow: 0 0 10px var(--color-suspicious-glow); }
-.verdict-value.phishing { color: var(--color-phishing); text-shadow: 0 0 10px var(--color-phishing-glow); }
+.verdict-value.phishing, .verdict-value.malicious { color: var(--color-phishing); text-shadow: 0 0 10px var(--color-phishing-glow); }
 .verdict-value.unknown { color: var(--color-unknown); }
 
 .confidence-bar-container {
