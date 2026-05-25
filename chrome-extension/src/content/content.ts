@@ -131,28 +131,30 @@
         display: flex;
         align-items: center;
         justify-content: center;
-        background: var(--bg-glass);
-        border: 1px solid var(--border-glass);
+        background: transparent;
+        border: 1px solid transparent;
         border-radius: 50%;
-        width: 36px;
-        height: 36px;
+        width: 24px;
+        height: 24px;
         cursor: pointer;
-        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4);
-        backdrop-filter: blur(16px);
-        -webkit-backdrop-filter: blur(16px);
         transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
         overflow: hidden;
         box-sizing: border-box;
       }
 
       .shield-badge:hover {
+        background: var(--bg-glass);
+        border: 1px solid var(--border-glass);
         border-radius: 9999px;
         width: 180px;
+        height: 36px;
         justify-content: flex-start;
         padding: 0 12px;
         gap: 8px;
         border-color: rgba(255, 255, 255, 0.2);
         box-shadow: 0 8px 30px rgba(0, 0, 0, 0.6);
+        backdrop-filter: blur(16px);
+        -webkit-backdrop-filter: blur(16px);
         transform: translateY(-1px);
       }
 
