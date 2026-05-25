@@ -6,7 +6,8 @@ const scanCache = new Map<string, any>();
 // Message listeners
 chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
   if (request.action === 'scanUrl') {
-    handleScanUrl(request.url)
+    const tabId = sender.tab?.id;
+    handleScanUrl(request.url, tabId)
       .then(sendResponse)
       .catch((err) => sendResponse({ error: true, message: err.message }));
     return true; // Keep message channel open for async response
@@ -41,8 +42,11 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
 });
 
 // Cache scans and report to the UI
-async function handleScanUrl(url: string) {
+async function handleScanUrl(url: string, tabId?: number) {
   if (!url || !url.startsWith('http')) {
+    if (tabId !== undefined) {
+      chrome.action.setBadgeText({ text: '', tabId });
+    }
     return {
       status: 'INVALID',
       confidence: 100,
@@ -55,7 +59,11 @@ async function handleScanUrl(url: string) {
 
   const cleanUrl = url.split('#')[0]; // Remove hash for caching
   if (scanCache.has(cleanUrl)) {
-    return scanCache.get(cleanUrl);
+    const cached = scanCache.get(cleanUrl);
+    if (tabId !== undefined) {
+      updateExtensionBadge(cached.status, tabId);
+    }
+    return cached;
   }
 
   // 1. Try to scan via Backend
@@ -72,8 +80,8 @@ async function handleScanUrl(url: string) {
       const data = await response.json();
       scanCache.set(cleanUrl, data);
       
-      // Update browser badge
-      updateExtensionBadge(data.status);
+      // Update browser badge for this tab
+      updateExtensionBadge(data.status, tabId);
       return data;
     }
     throw new Error('Server returned error status');
@@ -104,7 +112,7 @@ async function handleScanUrl(url: string) {
     };
 
     scanCache.set(cleanUrl, result);
-    updateExtensionBadge(result.status);
+    updateExtensionBadge(result.status, tabId);
     return result;
   }
 }
@@ -169,7 +177,7 @@ async function analyzeImageText(ocrText: string, filename: string) {
 }
 
 // Update Action Badge Indicator
-function updateExtensionBadge(status: string) {
+function updateExtensionBadge(status: string, tabId?: number) {
   let text = '';
   let color = '#6b7280';
 
@@ -184,6 +192,43 @@ function updateExtensionBadge(status: string) {
     color = '#ef4444';
   }
 
-  chrome.action.setBadgeText({ text });
-  chrome.action.setBadgeBackgroundColor({ color });
+  chrome.action.setBadgeText({ text, tabId });
+  chrome.action.setBadgeBackgroundColor({ color, tabId });
 }
+
+// Automatically scan active tab when url changes
+chrome.tabs.onUpdated.addListener((tabId, changeInfo, tab) => {
+  if (changeInfo.url) {
+    if (!changeInfo.url.startsWith('http')) {
+      chrome.action.setBadgeText({ text: '', tabId });
+    } else {
+      handleScanUrl(changeInfo.url, tabId).catch((err) => {
+        console.error('[URL SYSTEM SHIELD] Auto-scan on update failed:', err);
+      });
+    }
+  }
+});
+
+// Sync badge when switching tabs
+chrome.tabs.onActivated.addListener((activeInfo) => {
+  chrome.tabs.get(activeInfo.tabId, (tab) => {
+    if (chrome.runtime.lastError || !tab || !tab.url) {
+      chrome.action.setBadgeText({ text: '', tabId: activeInfo.tabId });
+      return;
+    }
+    
+    if (!tab.url.startsWith('http')) {
+      chrome.action.setBadgeText({ text: '', tabId: activeInfo.tabId });
+    } else {
+      const cleanUrl = tab.url.split('#')[0];
+      const cached = scanCache.get(cleanUrl);
+      if (cached) {
+        updateExtensionBadge(cached.status, activeInfo.tabId);
+      } else {
+        chrome.action.setBadgeText({ text: '', tabId: activeInfo.tabId });
+        // Start scanning automatically if not scanned yet
+        handleScanUrl(tab.url, activeInfo.tabId).catch(() => {});
+      }
+    }
+  });
+});

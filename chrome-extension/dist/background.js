@@ -1,4 +1,4 @@
-const h = /* @__PURE__ */ new Set([
+const p = /* @__PURE__ */ new Set([
   "google.com",
   "gmail.com",
   "youtube.com",
@@ -49,7 +49,7 @@ const h = /* @__PURE__ */ new Set([
   "irs.gov",
   "gov.uk",
   "gov.in"
-]), L = [
+]), I = [
   "paypal",
   "google",
   "gmail",
@@ -83,7 +83,7 @@ const h = /* @__PURE__ */ new Set([
   "shopify",
   "zoom",
   "discord"
-], I = /* @__PURE__ */ new Set([
+], b = /* @__PURE__ */ new Set([
   ".xyz",
   ".top",
   ".info",
@@ -113,7 +113,7 @@ const h = /* @__PURE__ */ new Set([
   ".trade",
   ".party",
   ".accountant"
-]), b = {
+]), U = {
   paypal: /p[a4][iy]p[a4]l/i,
   google: /g[o0][o0]g[l1][e3]/i,
   apple: /[a4]pp[l1][e3]/i,
@@ -125,66 +125,66 @@ const h = /* @__PURE__ */ new Set([
   twitter: /tw[i1]tt[e3]r/i,
   linkedin: /l[i1]nk[e3]d[i1]n/i
 };
-function v(i) {
-  const e = i.split("."), t = ["co.uk", "com.au", "co.in", "co.jp", "com.br"], o = e.slice(-2).join(".");
-  return t.includes(o) && e.length > 2 ? e.slice(-3).join(".") : e.slice(-2).join(".");
+function v(t) {
+  const e = t.split("."), i = ["co.uk", "com.au", "co.in", "co.jp", "com.br"], o = e.slice(-2).join(".");
+  return i.includes(o) && e.length > 2 ? e.slice(-3).join(".") : e.slice(-2).join(".");
 }
-function U(i) {
-  if (!i || i.trim() === "")
+function T(t) {
+  if (!t || t.trim() === "")
     return { isValid: !1, reason: "URL input is empty" };
-  if (i.includes(" "))
+  if (t.includes(" "))
     return { isValid: !1, reason: "URL contains spaces" };
   try {
-    const e = i.startsWith("http") ? i : `https://${i}`;
+    const e = t.startsWith("http") ? t : `https://${t}`;
     new URL(e);
   } catch {
     return { isValid: !1, reason: "URL syntax is malformed or invalid" };
   }
   return { isValid: !0 };
 }
-function k(i) {
+function k(t) {
   let e = 0;
-  const t = [];
+  const i = [];
   try {
-    const r = new URL(i.startsWith("http") ? i : `https://${i}`), s = r.hostname.toLowerCase(), c = v(s), u = h.has(c);
-    r.protocol !== "https:" && (e += 20, t.push({ id: "HTTP_NO_SECURE", description: "URL uses insecure HTTP protocol", severity: "medium" })), i.length > 100 ? (e += 20, t.push({ id: "LONG_URL", description: `URL is very long (${i.length} chars) — likely obfuscating destination`, severity: "medium" })) : i.length > 75 && (e += 10, t.push({ id: "LONG_URL", description: "URL is unusually long (potential obfuscation)", severity: "low" })), /^(\d{1,3}\.){3}\d{1,3}$/.test(s) && (e += 45, t.push({ id: "IP_HOSTNAME", description: "URL uses raw IP address instead of domain name", severity: "high" }));
-    const l = s.split(".");
-    if (l.length >= 5 && (e += 30, t.push({ id: "EXCESSIVE_SUBDOMAINS", description: `Extremely nested subdomains (${l.length} levels)`, severity: "high" })), !u) {
-      for (const n of L)
-        if (s.includes(n)) {
-          e += 50, t.push({
+    const n = new URL(t.startsWith("http") ? t : `https://${t}`), a = n.hostname.toLowerCase(), c = v(a), u = p.has(c);
+    n.protocol !== "https:" && (e += 20, i.push({ id: "HTTP_NO_SECURE", description: "URL uses insecure HTTP protocol", severity: "medium" })), t.length > 100 ? (e += 20, i.push({ id: "LONG_URL", description: `URL is very long (${t.length} chars) — likely obfuscating destination`, severity: "medium" })) : t.length > 75 && (e += 10, i.push({ id: "LONG_URL", description: "URL is unusually long (potential obfuscation)", severity: "low" })), /^(\d{1,3}\.){3}\d{1,3}$/.test(a) && (e += 45, i.push({ id: "IP_HOSTNAME", description: "URL uses raw IP address instead of domain name", severity: "high" }));
+    const l = a.split(".");
+    if (l.length >= 5 && (e += 30, i.push({ id: "EXCESSIVE_SUBDOMAINS", description: `Extremely nested subdomains (${l.length} levels)`, severity: "high" })), !u) {
+      for (const r of I)
+        if (a.includes(r)) {
+          e += 50, i.push({
             id: "BRAND_IMPERSONATION",
-            description: `Non-trusted domain "${c}" contains brand keyword "${n}" — likely impersonation`,
+            description: `Non-trusted domain "${c}" contains brand keyword "${r}" — likely impersonation`,
             severity: "high"
           });
           break;
         }
     }
-    for (const [n, d] of Object.entries(b))
-      if (d.test(s) && !h.has(c)) {
-        e += 55, t.push({
+    for (const [r, d] of Object.entries(U))
+      if (d.test(a) && !p.has(c)) {
+        e += 55, i.push({
           id: "TYPOSQUATTING",
-          description: `Domain appears to be a typosquat of "${n}" using character substitution`,
+          description: `Domain appears to be a typosquat of "${r}" using character substitution`,
           severity: "high"
         });
         break;
       }
-    const f = "." + l[l.length - 1].toLowerCase();
-    I.has(f) && (e += 25, t.push({ id: "SUSPICIOUS_TLD", description: `TLD "${f}" is frequently abused in scam campaigns`, severity: "medium" }));
-    const S = ["login", "verify", "update", "secure", "account", "banking", "signin", "confirm", "unlock", "validate"];
+    const S = "." + l[l.length - 1].toLowerCase();
+    b.has(S) && (e += 25, i.push({ id: "SUSPICIOUS_TLD", description: `TLD "${S}" is frequently abused in scam campaigns`, severity: "medium" }));
+    const L = ["login", "verify", "update", "secure", "account", "banking", "signin", "confirm", "unlock", "validate"];
     if (!u) {
-      for (const n of S)
-        if (s.includes(n)) {
-          e += 25, t.push({ id: "SUSPICIOUS_KEYWORD", description: `Untrusted hostname contains security-bait keyword: "${n}"`, severity: "high" });
+      for (const r of L)
+        if (a.includes(r)) {
+          e += 25, i.push({ id: "SUSPICIOUS_KEYWORD", description: `Untrusted hostname contains security-bait keyword: "${r}"`, severity: "high" });
           break;
         }
     }
-    const g = (s.match(/-/g) || []).length;
-    if (g >= 3 && (e += 20, t.push({ id: "MULTIPLE_HYPHENS", description: `Domain contains ${g} hyphens (phishing indicator)`, severity: "medium" })), !u && l.length >= 3) {
-      const n = l.slice(0, -2).join(".");
-      for (const d of h)
-        if (n.includes(d.replace(".", "-")) || n.includes(d)) {
-          e += 65, t.push({
+    const y = (a.match(/-/g) || []).length;
+    if (y >= 3 && (e += 20, i.push({ id: "MULTIPLE_HYPHENS", description: `Domain contains ${y} hyphens (phishing indicator)`, severity: "medium" })), !u && l.length >= 3) {
+      const r = l.slice(0, -2).join(".");
+      for (const d of p)
+        if (r.includes(d.replace(".", "-")) || r.includes(d)) {
+          e += 65, i.push({
             id: "DECEPTIVE_SUBDOMAIN",
             description: `Trusted brand "${d}" is used in subdomain to disguise malicious domain "${c}"`,
             severity: "high"
@@ -192,30 +192,33 @@ function k(i) {
           break;
         }
     }
-    /[^\x00-\x7F]/.test(s) && (e += 40, t.push({ id: "HOMOGRAPH_SPOOFING", description: "Domain contains non-ASCII characters (homograph attack)", severity: "high" }));
+    /[^\x00-\x7F]/.test(a) && (e += 40, i.push({ id: "HOMOGRAPH_SPOOFING", description: "Domain contains non-ASCII characters (homograph attack)", severity: "high" }));
   } catch {
-    e += 50, t.push({ id: "MALFORMED_URL", description: "URL structure is invalid or malformed", severity: "high" });
+    e += 50, i.push({ id: "MALFORMED_URL", description: "URL structure is invalid or malformed", severity: "high" });
   }
   e = Math.min(e, 100);
-  let o = "LOW", a = "SAFE";
-  return e >= 75 ? (o = "CRITICAL", a = "MALICIOUS") : e >= 45 ? (o = "HIGH", a = "MALICIOUS") : e >= 20 && (o = "MEDIUM", a = "SUSPICIOUS"), { score: e, reasons: t, riskLevel: o, status: a };
+  let o = "LOW", s = "SAFE";
+  return e >= 75 ? (o = "CRITICAL", s = "MALICIOUS") : e >= 45 ? (o = "HIGH", s = "MALICIOUS") : e >= 20 && (o = "MEDIUM", s = "SUSPICIOUS"), { score: e, reasons: i, riskLevel: o, status: s };
 }
-const p = "http://localhost:3001", m = /* @__PURE__ */ new Map();
-chrome.runtime.onMessage.addListener((i, e, t) => {
-  if (i.action === "scanUrl")
-    return O(i.url).then(t).catch((o) => t({ error: !0, message: o.message })), !0;
-  if (i.action === "checkServer")
-    return w().then(t).catch(() => t({ online: !1 })), !0;
-  if (i.action === "captureScreenshot")
-    return chrome.tabs.captureVisibleTab(void 0, { format: "png" }, (o) => {
-      chrome.runtime.lastError ? t({ error: !0, message: chrome.runtime.lastError.message }) : t(o ? { success: !0, dataUrl: o } : { error: !0, message: "Failed to capture screenshot." });
+const f = "http://localhost:3001", h = /* @__PURE__ */ new Map();
+chrome.runtime.onMessage.addListener((t, e, i) => {
+  var o;
+  if (t.action === "scanUrl") {
+    const s = (o = e.tab) == null ? void 0 : o.id;
+    return g(t.url, s).then(i).catch((n) => i({ error: !0, message: n.message })), !0;
+  }
+  if (t.action === "checkServer")
+    return O().then(i).catch(() => i({ online: !1 })), !0;
+  if (t.action === "captureScreenshot")
+    return chrome.tabs.captureVisibleTab(void 0, { format: "png" }, (s) => {
+      chrome.runtime.lastError ? i({ error: !0, message: chrome.runtime.lastError.message }) : i(s ? { success: !0, dataUrl: s } : { error: !0, message: "Failed to capture screenshot." });
     }), !0;
-  if (i.action === "analyzeOcrText")
-    return E(i.ocrText, i.filename).then(t).catch((o) => t({ error: !0, message: o.message })), !0;
+  if (t.action === "analyzeOcrText")
+    return E(t.ocrText, t.filename).then(i).catch((s) => i({ error: !0, message: s.message })), !0;
 });
-async function O(i) {
-  if (!i || !i.startsWith("http"))
-    return {
+async function g(t, e) {
+  if (!t || !t.startsWith("http"))
+    return e !== void 0 && chrome.action.setBadgeText({ text: "", tabId: e }), {
       status: "INVALID",
       confidence: 100,
       riskLevel: "LOW",
@@ -223,89 +226,111 @@ async function O(i) {
       threatScore: 0,
       aiExplanation: "Aborted: The extension only scans HTTP or HTTPS pages."
     };
-  const e = i.split("#")[0];
-  if (m.has(e))
-    return m.get(e);
+  const i = t.split("#")[0];
+  if (h.has(i)) {
+    const o = h.get(i);
+    return e !== void 0 && m(o.status, e), o;
+  }
   try {
-    const t = await fetch(`${p}/api/scan-url`, {
+    const o = await fetch(`${f}/api/scan-url`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json"
       },
-      body: JSON.stringify({ url: e })
+      body: JSON.stringify({ url: i })
     });
-    if (t.ok) {
-      const o = await t.json();
-      return m.set(e, o), y(o.status), o;
+    if (o.ok) {
+      const s = await o.json();
+      return h.set(i, s), m(s.status, e), s;
     }
     throw new Error("Server returned error status");
-  } catch (t) {
-    console.warn("[URL SYSTEM SHIELD] Backend offline or fetch error. Falling back to local Heuristics.", t);
-    const o = U(e);
-    if (!o.isValid)
+  } catch (o) {
+    console.warn("[URL SYSTEM SHIELD] Backend offline or fetch error. Falling back to local Heuristics.", o);
+    const s = T(i);
+    if (!s.isValid)
       return {
         status: "INVALID",
         confidence: 100,
         riskLevel: "LOW",
-        reasons: [{ id: "INVALID_URL_FORMAT", description: o.reason || "Invalid format", severity: "high" }],
+        reasons: [{ id: "INVALID_URL_FORMAT", description: s.reason || "Invalid format", severity: "high" }],
         threatScore: 0,
         aiExplanation: "Aborted: Local validation failed."
       };
-    const a = k(e), r = {
-      status: a.status,
+    const n = k(i), a = {
+      status: n.status,
       confidence: 80,
       // High confidence in heuristics
-      riskLevel: a.riskLevel,
-      reasons: a.reasons,
-      threatScore: a.score,
+      riskLevel: n.riskLevel,
+      reasons: n.reasons,
+      threatScore: n.score,
       aiExplanation: `[LOCAL HEURISTICS] URL SYSTEM server is offline. Local Heuristic Shield is active.
 
-Heuristic scan evaluated this URL score at ${a.score}/100 based on ${a.reasons.length} warning indicators.`
+Heuristic scan evaluated this URL score at ${n.score}/100 based on ${n.reasons.length} warning indicators.`
     };
-    return m.set(e, r), y(r.status), r;
+    return h.set(i, a), m(a.status, e), a;
   }
 }
-async function w() {
-  var i;
+async function O() {
+  var t;
   try {
-    const e = await fetch(`${p}/api/system-status`, { signal: AbortSignal.timeout(2e3) });
+    const e = await fetch(`${f}/api/system-status`, { signal: AbortSignal.timeout(2e3) });
     if (e.ok)
-      return { online: !0, aiConnected: ((i = (await e.json()).services) == null ? void 0 : i.ai_orchestrator) === "online" };
+      return { online: !0, aiConnected: ((t = (await e.json()).services) == null ? void 0 : t.ai_orchestrator) === "online" };
   } catch {
   }
   return { online: !1, aiConnected: !1 };
 }
-async function E(i, e) {
+async function E(t, e) {
   try {
-    const t = await fetch(`${p}/api/analyze-image`, {
+    const i = await fetch(`${f}/api/analyze-image`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json"
       },
-      body: JSON.stringify({ ocrText: i, filename: e })
+      body: JSON.stringify({ ocrText: t, filename: e })
     });
-    if (t.ok)
-      return await t.json();
+    if (i.ok)
+      return await i.json();
     throw new Error("Failed to analyze image content via API.");
-  } catch (t) {
-    console.error("[URL SYSTEM SHIELD] OCR Analysis API failed:", t);
-    const o = i.toLowerCase(), a = /urgent|verify|suspend|limited|reset|security|unusual/i.test(o), r = /login|password|signin|credentials|bank|wallet/i.test(o);
-    let s = 0;
+  } catch (i) {
+    console.error("[URL SYSTEM SHIELD] OCR Analysis API failed:", i);
+    const o = t.toLowerCase(), s = /urgent|verify|suspend|limited|reset|security|unusual/i.test(o), n = /login|password|signin|credentials|bank|wallet/i.test(o);
+    let a = 0;
     const c = [];
-    return a && (s += 35, c.push({ id: "URGENCY_MANIPULATION", description: "OCR text contains high-urgency keywords", severity: "medium" })), r && (s += 45, c.push({ id: "CREDENTIAL_HARVESTING", description: "OCR text requests sensitive credentials or login details", severity: "high" })), {
-      status: s >= 45 ? "MALICIOUS" : s > 0 ? "SUSPICIOUS" : "SAFE",
+    return s && (a += 35, c.push({ id: "URGENCY_MANIPULATION", description: "OCR text contains high-urgency keywords", severity: "medium" })), n && (a += 45, c.push({ id: "CREDENTIAL_HARVESTING", description: "OCR text requests sensitive credentials or login details", severity: "high" })), {
+      status: a >= 45 ? "MALICIOUS" : a > 0 ? "SUSPICIOUS" : "SAFE",
       confidence: 65,
-      riskLevel: s >= 45 ? "HIGH" : s > 0 ? "MEDIUM" : "LOW",
+      riskLevel: a >= 45 ? "HIGH" : a > 0 ? "MEDIUM" : "LOW",
       reasons: c,
       aiExplanation: `[LOCAL HEURISTICS] Server offline. Local Image Heuristics scan completed.
 
-Extracted OCR Text length: ${i.length} characters.
-Urgency indicators: ${a ? "YES" : "NO"}
-Phishing keywords: ${r ? "YES" : "NO"}`
+Extracted OCR Text length: ${t.length} characters.
+Urgency indicators: ${s ? "YES" : "NO"}
+Phishing keywords: ${n ? "YES" : "NO"}`
     };
   }
 }
-function y(i) {
-  let e = "", t = "#6b7280";
-  i === "SAFE" ? (e = "OK", t = "#10b981") : i === "SUSPICIOUS" ? (e = "WARN", t = "#f59e0b") : i === "MALICIOUS" && (e = "RISK", t = "#ef4444"), chrome.action.setBadgeText({ text: e }), chrome.action.setBadgeBackgroundColor({ color: t });
+function m(t, e) {
+  let i = "", o = "#6b7280";
+  t === "SAFE" ? (i = "OK", o = "#10b981") : t === "SUSPICIOUS" ? (i = "WARN", o = "#f59e0b") : t === "MALICIOUS" && (i = "RISK", o = "#ef4444"), chrome.action.setBadgeText({ text: i, tabId: e }), chrome.action.setBadgeBackgroundColor({ color: o, tabId: e });
 }
+chrome.tabs.onUpdated.addListener((t, e, i) => {
+  e.url && (e.url.startsWith("http") ? g(e.url, t).catch((o) => {
+    console.error("[URL SYSTEM SHIELD] Auto-scan on update failed:", o);
+  }) : chrome.action.setBadgeText({ text: "", tabId: t }));
+});
+chrome.tabs.onActivated.addListener((t) => {
+  chrome.tabs.get(t.tabId, (e) => {
+    if (chrome.runtime.lastError || !e || !e.url) {
+      chrome.action.setBadgeText({ text: "", tabId: t.tabId });
+      return;
+    }
+    if (!e.url.startsWith("http"))
+      chrome.action.setBadgeText({ text: "", tabId: t.tabId });
+    else {
+      const i = e.url.split("#")[0], o = h.get(i);
+      o ? m(o.status, t.tabId) : (chrome.action.setBadgeText({ text: "", tabId: t.tabId }), g(e.url, t.tabId).catch(() => {
+      }));
+    }
+  });
+});
