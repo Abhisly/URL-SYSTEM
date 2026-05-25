@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>URL SYSTEM Shield</title>
+  <script type="module" crossorigin src="./assets/popup-CKF3nWxY.js"></script>
+  <link rel="stylesheet" crossorigin href="./assets/popup-Ce076Myn.css">
+</head>
+<body>
+  <div class="app-container">
+    <!-- Header -->
+    <header class="app-header">
+      <div class="brand">
+        <span class="pulse-dot grey" id="header-status-dot"></span>
+        <h1>URL SYSTEM <span class="accent">SHIELD</span></h1>
+      </div>
+      <div class="server-badge offline" id="server-status-badge">API OFFLINE</div>
+    </header>
+
+    <!-- Main Content -->
+    <main class="app-main">
+      <!-- Status Card -->
+      <section class="card status-card">
+        <div class="url-display">
+          <span class="label">Current Tab:</span>
+          <span class="value" id="current-url">Loading page...</span>
+        </div>
+        <div class="verdict-display">
+          <div class="verdict-title">VERDICT</div>
+          <div class="verdict-value unknown" id="verdict-text">ANALYZING...</div>
+          <div class="confidence-bar-container">
+            <div class="confidence-bar" id="confidence-bar" style="width: 0%"></div>
+          </div>
+          <div class="confidence-text" id="confidence-text">Confidence: 0%</div>
+        </div>
+      </section>
+
+      <!-- Action Panel -->
+      <section class="action-panel">
+        <button id="analyze-screenshot-btn" class="btn btn-primary" disabled>
+          <span class="btn-text">Analyze Current Page</span>
+          <span class="btn-glow"></span>
+        </button>
+      </section>
+
+      <!-- Threat Details (Hidden by default, shown if threat is detected) -->
+      <section class="card threat-details" id="threat-details-card" style="display: none;">
+        <div class="card-header">Threat Indicators</div>
+        <ul class="reasons-list" id="reasons-list">
+          <!-- Populated dynamically -->
+        </ul>
+      </section>
+
+      <!-- AI Insights -->
+      <section class="card ai-insights" id="ai-insights-card">
+        <div class="card-header">AI Analyst Report</div>
+        <div class="ai-report-body" id="ai-report-text">
+          Initializing URL SYSTEM security core...
+        </div>
+      </section>
+    </main>
+
+    <!-- Footer -->
+    <footer class="app-footer">
+      <span>Active Browser Protection</span>
+      <span>v1.0.0</span>
+    </footer>
+  </div>
+</body>
+</html>

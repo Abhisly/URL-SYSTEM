@@ -1,0 +1,19 @@
+{
+  "name": "url-system-chrome-extension",
+  "version": "1.0.0",
+  "description": "Chrome Extension for URL SYSTEM",
+  "main": "dist/background.js",
+  "scripts": {
+    "dev": "node build.js --watch",
+    "build": "node build.js",
+    "generate-icons": "node generate-icons.js"
+  },
+  "dependencies": {
+    "tesseract.js": "^7.0.0"
+  },
+  "devDependencies": {
+    "@types/chrome": "^0.0.268",
+    "typescript": "^5.3.3",
+    "vite": "^5.1.4"
+  }
+}
