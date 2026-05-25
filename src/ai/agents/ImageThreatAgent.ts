@@ -1,5 +1,5 @@
 import { processImageScan } from '@cyber/detection/imageAnalysisService';
-import { ImageScanResponse, RiskLevel } from '@projectTypes/index';
+import { ImageScanResponse } from '@projectTypes/index';
 import { ThreatReasoningAgent } from './ThreatReasoningAgent';
 
 export class ImageThreatAgent {
@@ -20,19 +20,30 @@ export class ImageThreatAgent {
 
     // 4. Merge results
     if (aiInsights) {
-      if (['SAFE', 'LOW', 'MEDIUM', 'HIGH', 'CRITICAL'].includes(aiInsights.threatLevel.toUpperCase())) {
-        const mappedRisk = aiInsights.threatLevel.replace(' RISK', '').toUpperCase() as RiskLevel;
-        if (['LOW', 'MEDIUM', 'HIGH', 'CRITICAL'].includes(mappedRisk)) {
-          result.riskLevel = mappedRisk;
-        }
+      const cleanLevel = aiInsights.threatLevel.toUpperCase();
+      let finalScore = 0;
+      if (cleanLevel.includes('CRITICAL')) {
+        result.riskLevel = 'CRITICAL';
+        result.status = 'MALICIOUS';
+        finalScore = 95;
+      } else if (cleanLevel.includes('HIGH') || cleanLevel.includes('MALICIOUS') || cleanLevel.includes('PHISHING')) {
+        result.riskLevel = 'HIGH';
+        result.status = 'MALICIOUS';
+        finalScore = 85;
+      } else if (cleanLevel.includes('SUSPICIOUS') || cleanLevel.includes('MEDIUM')) {
+        result.riskLevel = 'MEDIUM';
+        result.status = 'SUSPICIOUS';
+        finalScore = 55;
+      } else {
+        result.riskLevel = 'LOW';
+        result.status = 'SAFE';
+        finalScore = 15;
       }
+
+      result.threatScore = Math.max(finalScore, result.threatScore || 0);
       result.confidence = Math.round((aiInsights.confidenceScore * 0.7) + (result.confidence * 0.3));
       result.aiExplanation = aiInsights.aiExplanation;
       result.detectedPatterns = aiInsights.detectedPatterns;
-
-      if (result.riskLevel === 'LOW') result.status = 'SAFE';
-      else if (result.riskLevel === 'MEDIUM') result.status = 'SUSPICIOUS';
-      else result.status = 'MALICIOUS';
     } else {
       result.aiExplanation = 'AI reasoning engine offline. Relied strictly on OCR heuristics.';
     }

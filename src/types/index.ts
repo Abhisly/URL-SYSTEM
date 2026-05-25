@@ -14,6 +14,7 @@ export interface BaseScanResponse {
   reasons: ThreatReason[];
   aiExplanation?: string;
   detectedPatterns?: string[];
+  threatScore?: number;
 }
 
 export interface BrowserScanReport {

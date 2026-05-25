@@ -24,7 +24,8 @@ export async function processImageScan(ocrText: string, filename: string): Promi
     confidence: Math.round(confidence),
     riskLevel,
     reasons,
-    extractedText: ocrText.substring(0, 500) // Truncate for response
+    extractedText: ocrText.substring(0, 500), // Truncate for response
+    threatScore: score
   };
 
   // 3. Log to DB

@@ -24,9 +24,10 @@ export async function POST(request: NextRequest) {
         textToAnalyze = ocrRes.data.text.trim();
         await worker.terminate();
         console.log(`[API/analyze-image] Server-side OCR complete. Extracted ${textToAnalyze.length} chars.`);
-      } catch (ocrErr: any) {
+      } catch (ocrErr: unknown) {
+        const errMessage = ocrErr instanceof Error ? ocrErr.message : String(ocrErr);
         console.error('[API/analyze-image] Server-side OCR failed:', ocrErr);
-        return errorResponse(`Server-side OCR engine failed: ${ocrErr.message || String(ocrErr)}`, 500);
+        return errorResponse(`Server-side OCR engine failed: ${errMessage}`, 500);
       }
     }
 
