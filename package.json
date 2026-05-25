@@ -3,12 +3,12 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "dev": "next dev --turbopack -p 3001",
+    "dev": "next dev --turbopack -p 3000",
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
     "ai:start": "echo 'To start AI, open a new terminal and run: ollama serve' && echo 'Make sure model is pulled via: ollama run llama3'",
-    "dev:all": "npm run ai:start && next dev --turbopack -p 3001"
+    "dev:all": "npm run ai:start && next dev --turbopack -p 3000"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.106.1",

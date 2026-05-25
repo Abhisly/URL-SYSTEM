@@ -1,6 +1,6 @@
 import { analyzeUrlLocal, validateUrlFormat } from './localHeuristics';
 
-let BACKEND_URL = 'http://localhost:3001';
+let BACKEND_URL = 'http://localhost:3000';
 
 // Load stored backend URL
 chrome.storage.local.get(['backendUrl'], (result) => {

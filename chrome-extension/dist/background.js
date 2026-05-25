@@ -200,7 +200,7 @@ function T(e) {
   let o = "LOW", a = "SAFE";
   return t >= 75 ? (o = "CRITICAL", a = "MALICIOUS") : t >= 45 ? (o = "HIGH", a = "MALICIOUS") : t >= 20 && (o = "MEDIUM", a = "SUSPICIOUS"), { score: t, reasons: i, riskLevel: o, status: a };
 }
-let d = "http://localhost:3001";
+let d = "http://localhost:3000";
 chrome.storage.local.get(["backendUrl"], (e) => {
   e.backendUrl && (d = e.backendUrl, console.log("[URL SYSTEM SHIELD] Loaded backend URL from storage:", d));
 });
