@@ -112,6 +112,8 @@
         --color-suspicious-glow: rgba(245, 158, 11, 0.45);
         --color-phishing: #ef4444;
         --color-phishing-glow: rgba(239, 68, 68, 0.45);
+        --color-scanning: #6366f1;
+        --color-scanning-glow: rgba(99, 102, 241, 0.45);
         --bg-glass: rgba(10, 7, 24, 0.88);
         --border-glass: rgba(255, 255, 255, 0.08);
       }
@@ -171,6 +173,7 @@
       .shield-dot.safe { background-color: var(--color-safe); box-shadow: 0 0 10px var(--color-safe-glow); }
       .shield-dot.suspicious { background-color: var(--color-suspicious); box-shadow: 0 0 10px var(--color-suspicious-glow); }
       .shield-dot.phishing, .shield-dot.malicious { background-color: var(--color-phishing); box-shadow: 0 0 10px var(--color-phishing-glow); }
+      .shield-dot.scanning { background-color: var(--color-scanning); box-shadow: 0 0 10px var(--color-scanning-glow); }
 
       /* Amplified hover effects for the dot */
       .shield-badge:hover .shield-dot {
@@ -179,6 +182,7 @@
       .shield-badge:hover .shield-dot.safe { box-shadow: 0 0 18px 3px var(--color-safe-glow); }
       .shield-badge:hover .shield-dot.suspicious { box-shadow: 0 0 18px 3px var(--color-suspicious-glow); }
       .shield-badge:hover .shield-dot.phishing, .shield-badge:hover .shield-dot.malicious { box-shadow: 0 0 18px 3px var(--color-phishing-glow); }
+      .shield-badge:hover .shield-dot.scanning { box-shadow: 0 0 18px 3px var(--color-scanning-glow); }
 
       .shield-dot::after {
         content: '';
@@ -221,6 +225,7 @@
       .shield-badge.safe .shield-label { color: var(--color-safe); }
       .shield-badge.suspicious .shield-label { color: var(--color-suspicious); }
       .shield-badge.phishing .shield-label, .shield-badge.malicious .shield-label { color: var(--color-phishing); }
+      .shield-badge.scanning .shield-label { color: var(--color-scanning); }
 
       /* Close button */
       .shield-close {
@@ -314,6 +319,7 @@
       .verdict-tag.safe { color: var(--color-safe); text-shadow: 0 0 10px var(--color-safe-glow); }
       .verdict-tag.suspicious { color: var(--color-suspicious); text-shadow: 0 0 10px var(--color-suspicious-glow); }
       .verdict-tag.phishing, .verdict-tag.malicious { color: var(--color-phishing); text-shadow: 0 0 10px var(--color-phishing-glow); }
+      .verdict-tag.scanning { color: var(--color-scanning); text-shadow: 0 0 10px var(--color-scanning-glow); }
 
       .verdict-meta {
         font-size: 10px;
@@ -524,7 +530,7 @@
       badge.className = `shield-badge ${status.toLowerCase()}`;
       const label = badge.querySelector('.shield-label') as HTMLElement;
       if (label) {
-        label.textContent = status === 'MALICIOUS' ? 'PHISHING RISK' : `${status} SITE`;
+        label.textContent = status === 'MALICIOUS' ? 'PHISHING RISK' : (status === 'SCANNING' ? 'ANALYZING...' : `${status} SITE`);
       }
     }
 
@@ -538,13 +544,18 @@
     const vTag = activeShadow.querySelector('.verdict-tag') as HTMLElement;
     if (vTag) {
       vTag.className = `verdict-tag ${status.toLowerCase()}`;
-      vTag.textContent = status === 'MALICIOUS' ? 'PHISHING DETECTED' : (status === 'SUSPICIOUS' ? 'SUSPICIOUS WEB' : 'VERIFIED SAFE');
+      vTag.textContent = status === 'MALICIOUS' ? 'PHISHING DETECTED' : (status === 'SUSPICIOUS' ? 'SUSPICIOUS WEB' : (status === 'SCANNING' ? 'ANALYZING LAYERS...' : 'VERIFIED SAFE'));
     }
 
     const vMeta = activeShadow.querySelector('.verdict-meta') as HTMLElement;
     if (vMeta) {
-      vMeta.textContent = `Confidence: ${confidence}% | Threat Score: ${score}/100`;
+      if (status === 'SCANNING') {
+        vMeta.textContent = 'Confidence: --% | Threat Score: --/100';
+      } else {
+        vMeta.textContent = `Confidence: ${confidence}% | Threat Score: ${score}/100`;
+      }
     }
+
 
     const aiRep = activeShadow.querySelector('.ai-report') as HTMLElement;
     if (aiRep) {
