@@ -19,10 +19,10 @@ document.addEventListener('DOMContentLoaded', async () => {
 
   // 1. Get Current Tab Info
   try {
-    const tabs = await chrome.tabs.query({ active: true, currentWindow: true });
+    const tabs = await chrome.tabs.query({ active: true, lastFocusedWindow: true });
     if (tabs && tabs[0]) {
       const tab = tabs[0];
-      activeTabUrl = tab.url || '';
+      activeTabUrl = tab.url || tab.pendingUrl || '';
       activeTabId = tab.id;
       
       if (activeTabUrl) {
