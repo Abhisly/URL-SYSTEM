@@ -1,5 +1,5 @@
 import { processUrlScan } from '@cyber/url-analysis/urlAnalysisService';
-import { URLScanResponse, RiskLevel, BrowserScanReport } from '@projectTypes/index';
+import { URLScanResponse, RiskLevel } from '@projectTypes/index';
 import { ThreatReasoningAgent } from './ThreatReasoningAgent';
 import { runBrowserSimulation } from '@cyber/url-analysis/browserSimulator';
 import { validateUrlFormat } from '@cyber/heuristics/urlHeuristics';

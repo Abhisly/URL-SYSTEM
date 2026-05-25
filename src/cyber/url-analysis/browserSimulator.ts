@@ -29,8 +29,9 @@ export async function runBrowserSimulation(url: string): Promise<BrowserScanRepo
     const dnsRes = await dns.promises.lookup(hostname);
     ip = dnsRes.address;
     dnsResolved = true;
-  } catch (err: any) {
-    dnsError = err.message || 'DNS resolution failed';
+  } catch (err: unknown) {
+    const message = err instanceof Error ? err.message : 'DNS resolution failed';
+    dnsError = message || 'DNS resolution failed';
   }
   const dnsLookupTimeMs = Date.now() - dnsStart;
 
@@ -41,9 +42,9 @@ export async function runBrowserSimulation(url: string): Promise<BrowserScanRepo
   
   let statusCode: number | undefined;
   let statusText: string | undefined;
-  let redirectChain: string[] = [];
+  const redirectChain: string[] = [];
   let responseTimeMs = 0;
-  let headers: Record<string, string> = {};
+  const headers: Record<string, string> = {};
   
   let title = '';
   let description = '';
@@ -113,21 +114,22 @@ export async function runBrowserSimulation(url: string): Promise<BrowserScanRepo
         || html.match(/<meta[^>]+content=["']([^"']{0,400})["'][^>]+name=["']description["']/i);
       description = (ogDescMatch?.[1] || metaDescMatch?.[1] || '').trim();
 
-    } catch (err: any) {
+    } catch (err: unknown) {
       connectionStatus = 'FAILED';
       sslVerified = false;
       responseTimeMs = Date.now() - httpStart;
       
-      const isSslErr = err.message && (
-        err.message.includes('cert') || 
-        err.message.includes('ssl') || 
-        err.message.includes('tls') || 
-        err.message.includes('expired')
+      const message = err instanceof Error ? err.message : String(err);
+      const isSslErr = message && (
+        message.includes('cert') || 
+        message.includes('ssl') || 
+        message.includes('tls') || 
+        message.includes('expired')
       );
       if (isSslErr) {
         dnsError = 'SSL/TLS Handshake Error: Invalid or expired SSL certificate';
       } else {
-        dnsError = err.message || 'HTTP request connection timed out';
+        dnsError = message || 'HTTP request connection timed out';
       }
     }
   }

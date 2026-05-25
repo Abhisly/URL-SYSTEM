@@ -21,7 +21,7 @@ const glowColorMap: Record<string, { base: number; spread: number; saturation: n
 const GlowCard = React.forwardRef<
   HTMLDivElement,
   GlowCardProps & React.HTMLAttributes<HTMLDivElement>
->(({ children, className = '', glowColor = 'purple', customSize = false, style, ...props }, ref) => {
+>(({ children, className = '', glowColor = 'purple', customSize: _customSize = false, style, ...props }, ref) => {
   const cardRef = useRef<HTMLDivElement>(null);
   const innerRef = useRef<HTMLDivElement>(null);
 

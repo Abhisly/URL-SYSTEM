@@ -84,7 +84,7 @@ export class ThreatReasoningAgent {
     rawContext: string,
     currentReasons: ThreatReason[],
     metadata?: SiteMetadata,
-    browserReport?: BrowserScanReport
+    _browserReport?: BrowserScanReport
   ): Promise<AIInsights | null> {
     console.log(`[ThreatReasoningAgent] Reasoning over ${contextType} context...`);
 
