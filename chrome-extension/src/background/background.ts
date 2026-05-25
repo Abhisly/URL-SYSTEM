@@ -1,6 +1,15 @@
 import { analyzeUrlLocal, validateUrlFormat } from './localHeuristics';
 
-const BACKEND_URL = 'http://localhost:3001';
+let BACKEND_URL = 'http://localhost:3001';
+
+// Load stored backend URL
+chrome.storage.local.get(['backendUrl'], (result) => {
+  if (result.backendUrl) {
+    BACKEND_URL = result.backendUrl;
+    console.log('[URL SYSTEM SHIELD] Loaded backend URL from storage:', BACKEND_URL);
+  }
+});
+
 const scanCache = new Map<string, any>();
 
 // Message listeners
@@ -37,6 +46,20 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
     analyzeImageText(request.ocrText, request.filename)
       .then(sendResponse)
       .catch((err) => sendResponse({ error: true, message: err.message }));
+    return true;
+  }
+
+  if (request.action === 'registerBackend') {
+    const url = request.url;
+    if (url && (url.startsWith('http://localhost') || url.includes('vercel.app') || url.includes('127.0.0.1'))) {
+      chrome.storage.local.set({ backendUrl: url }, () => {
+        BACKEND_URL = url;
+        console.log('[URL SYSTEM SHIELD] Successfully registered backend URL:', url);
+        sendResponse({ success: true, backendUrl: url });
+      });
+      return true;
+    }
+    sendResponse({ success: false });
     return true;
   }
 });

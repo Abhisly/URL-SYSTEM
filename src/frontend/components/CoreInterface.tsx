@@ -29,6 +29,12 @@ export default function CoreInterface() {
     return () => clearInterval(iv);
   }, []);
 
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      window.postMessage({ type: 'URL_SYSTEM_REGISTER_BACKEND', url: window.location.origin }, '*');
+    }
+  }, []);
+
   const isWorking = isScanning || isVerifying || isImageScanning;
   const isComplete = scanComplete || verifyComplete || imageScanComplete;
   const activeResult = activeMode === 'URL' ? scanResult : activeMode === 'EMAIL' ? verifyResult : imageScanResult;

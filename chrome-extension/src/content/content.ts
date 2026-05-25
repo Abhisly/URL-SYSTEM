@@ -417,4 +417,15 @@
       isDragging = false;
     });
   }
+
+  // Listen for messages from the host webpage to register the backend URL dynamically
+  window.addEventListener('message', (event) => {
+    if (event.data && event.data.type === 'URL_SYSTEM_REGISTER_BACKEND' && event.data.url) {
+      chrome.runtime.sendMessage({ action: 'registerBackend', url: event.data.url }, (response) => {
+        if (response && response.success) {
+          console.log('[URL SYSTEM SHIELD] Dynamic backend registered:', event.data.url);
+        }
+      });
+    }
+  });
 })();
