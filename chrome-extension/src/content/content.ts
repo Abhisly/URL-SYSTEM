@@ -497,9 +497,18 @@
     });
   }
 
-  function updateFloatingDotUI(result: any) {
+  function updateFloatingDotUI(result: any, forceOpen = false) {
     if (!activeHost || !activeShadow) {
       injectFloatingDot(result);
+      if (forceOpen) {
+        setTimeout(() => {
+          const panel = activeShadow?.querySelector('.shield-panel') as HTMLElement;
+          if (panel) {
+            panel.style.display = 'flex';
+            setTimeout(() => panel.classList.add('open'), 20);
+          }
+        }, 100);
+      }
       return;
     }
 
@@ -564,16 +573,23 @@
       });
     }
 
+    if (forceOpen) {
+      const panel = activeShadow.querySelector('.shield-panel') as HTMLElement;
+      if (panel) {
+        panel.style.display = 'flex';
+        setTimeout(() => panel.classList.add('open'), 20);
+      }
+    }
   }
 
-  function showLoadingState(msg: string) {
+  function showLoadingState(msg: string, forceOpen = false) {
     updateFloatingDotUI({
       status: 'SUSPICIOUS',
       confidence: 50,
       threatScore: 0,
       aiExplanation: msg,
       reasons: []
-    });
+    }, forceOpen);
     const aiRep = activeShadow?.querySelector('.ai-report') as HTMLElement;
     if (aiRep) {
       aiRep.innerHTML = `<span style="display:inline-block;animation:pulse 1.5s infinite;color:#6366f1;">${msg}</span>`;
@@ -669,14 +685,14 @@
       overlay.remove();
 
       if (w > 15 && h > 15) {
-        showLoadingState('Capturing selected area and sending to AI backend...');
+        showLoadingState('Capturing selected area and sending to AI backend...', true);
 
         chrome.runtime.sendMessage({
           action: 'analyzeRegion',
           coords: { x, y, width: w, height: h, dpr }
         }, (result) => {
           if (result && !result.error) {
-            updateFloatingDotUI(result);
+            updateFloatingDotUI(result, true);
           } else {
             updateFloatingDotUI({
               status: 'SUSPICIOUS',
@@ -684,7 +700,7 @@
               threatScore: 0,
               aiExplanation: result?.message || 'Failed to analyze selected region.',
               reasons: []
-            });
+            }, true);
           }
         });
       }
