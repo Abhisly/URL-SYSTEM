@@ -1,4 +1,3 @@
-import Tesseract from 'tesseract.js';
 
 document.addEventListener('DOMContentLoaded', async () => {
   const currentUrlEl = document.getElementById('current-url') as HTMLElement;
@@ -87,35 +86,20 @@ document.addEventListener('DOMContentLoaded', async () => {
       }
 
       const dataUrl = response.dataUrl;
-      analyzeBtn.querySelector('.btn-text')!.textContent = 'PERFORMING OCR...';
-      aiReportTextEl.innerHTML = '<span class="loading-pulse">Processing image buffers. Initializing Tesseract OCR core...</span>';
+      analyzeBtn.querySelector('.btn-text')!.textContent = 'ANALYZING THREATS...';
+      aiReportTextEl.innerHTML = '<span class="loading-pulse">Scanning image layout & performing server-side AI OCR verification...</span>';
 
-      try {
-        // Run OCR inside the popup DOM context
-        const worker = await Tesseract.createWorker('eng');
-        const ocrRes = await worker.recognize(dataUrl);
-        const text = ocrRes.data.text.trim();
-        await worker.terminate();
-
-        analyzeBtn.querySelector('.btn-text')!.textContent = 'ANALYZING THREATS...';
-        aiReportTextEl.innerHTML = '<span class="loading-pulse">Extracting language patterns and querying AI reasoning engine...</span>';
-
-        chrome.runtime.sendMessage(
-          { action: 'analyzeOcrText', ocrText: text, filename: 'screenshot_capture.png' },
-          (scanResult) => {
-            resetBtn();
-            if (!scanResult || scanResult.error) {
-              alert('Image analysis failed: ' + (scanResult?.message || 'Server error'));
-              return;
-            }
-            renderScanResults(scanResult);
+      chrome.runtime.sendMessage(
+        { action: 'analyzeScreenshot', image: dataUrl, filename: 'screenshot_capture.png' },
+        (scanResult) => {
+          resetBtn();
+          if (!scanResult || scanResult.error) {
+            alert('Image analysis failed: ' + (scanResult?.message || 'Server error'));
+            return;
           }
-        );
-      } catch (err: any) {
-        console.error('OCR Error:', err);
-        alert('OCR Engine failed: ' + (err.message || String(err)));
-        resetBtn();
-      }
+          renderScanResults(scanResult);
+        }
+      );
     });
 
     function resetBtn() {

@@ -33,8 +33,8 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
     return true;
   }
 
-  if (request.action === 'analyzeOcrText') {
-    analyzeImageText(request.ocrText, request.filename)
+  if (request.action === 'analyzeScreenshot') {
+    analyzeScreenshot(request.image, request.filename)
       .then(sendResponse)
       .catch((err) => sendResponse({ error: true, message: err.message }));
     return true;
@@ -131,47 +131,31 @@ async function checkServerStatus() {
   return { online: false, aiConnected: false };
 }
 
-// Upload OCR text to backend for AI evaluation
-async function analyzeImageText(ocrText: string, filename: string) {
+// Upload screenshot to backend for server-side OCR and AI evaluation
+async function analyzeScreenshot(image: string, filename: string) {
   try {
     const res = await fetch(`${BACKEND_URL}/api/analyze-image`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json'
       },
-      body: JSON.stringify({ ocrText, filename })
+      body: JSON.stringify({ image, filename })
     });
 
     if (res.ok) {
       return await res.json();
     }
-    throw new Error('Failed to analyze image content via API.');
-  } catch (error) {
-    console.error('[URL SYSTEM SHIELD] OCR Analysis API failed:', error);
+    const errData = await res.json().catch(() => ({}));
+    throw new Error(errData.message || 'Failed to analyze image content via API.');
+  } catch (error: any) {
+    console.error('[URL SYSTEM SHIELD] Screenshot Analysis API failed:', error);
     
-    // Simple local rule engine for OCR offline fallback
-    const lowerText = ocrText.toLowerCase();
-    const hasUrgent = /urgent|verify|suspend|limited|reset|security|unusual/i.test(lowerText);
-    const hasPhish = /login|password|signin|credentials|bank|wallet/i.test(lowerText);
-    
-    let score = 0;
-    const reasons = [];
-    if (hasUrgent) {
-      score += 35;
-      reasons.push({ id: 'URGENCY_MANIPULATION', description: 'OCR text contains high-urgency keywords', severity: 'medium' });
-    }
-    if (hasPhish) {
-      score += 45;
-      reasons.push({ id: 'CREDENTIAL_HARVESTING', description: 'OCR text requests sensitive credentials or login details', severity: 'high' });
-    }
-
-    const localVerdict = score >= 45 ? 'MALICIOUS' : (score > 0 ? 'SUSPICIOUS' : 'SAFE');
     return {
-      status: localVerdict,
-      confidence: 65,
-      riskLevel: score >= 45 ? 'HIGH' : (score > 0 ? 'MEDIUM' : 'LOW'),
-      reasons,
-      aiExplanation: `[LOCAL HEURISTICS] Server offline. Local Image Heuristics scan completed.\n\nExtracted OCR Text length: ${ocrText.length} characters.\nUrgency indicators: ${hasUrgent ? 'YES' : 'NO'}\nPhishing keywords: ${hasPhish ? 'YES' : 'NO'}`
+      status: 'UNKNOWN',
+      confidence: 50,
+      riskLevel: 'LOW',
+      reasons: [{ id: 'OCR_OFFLINE', description: 'OCR engine is offline. Start URL SYSTEM backend to run visual scanning.', severity: 'medium' }],
+      aiExplanation: `[OFFLINE] Could not analyze screenshot because the URL SYSTEM backend API is offline or unreachable.\n\nScreenshot analysis requires the server-side OCR engine to be running.`
     };
   }
 }
