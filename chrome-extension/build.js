@@ -101,6 +101,11 @@ async function runBuild() {
     path.resolve(__dirname, 'dist/icons')
   );
 
+  copyRecursiveSync(
+    path.resolve(__dirname, 'tesseract'),
+    path.resolve(__dirname, 'dist/tesseract')
+  );
+
   console.log(`\nExtension built successfully into ${path.resolve(__dirname, 'dist')}`);
 }
 

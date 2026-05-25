@@ -1,4 +1,6 @@
 
+import { createWorker } from 'tesseract.js';
+
 document.addEventListener('DOMContentLoaded', async () => {
   const currentUrlEl = document.getElementById('current-url') as HTMLElement;
   const verdictTextEl = document.getElementById('verdict-text') as HTMLElement;
@@ -45,7 +47,7 @@ document.addEventListener('DOMContentLoaded', async () => {
       serverStatusBadge.textContent = 'API ONLINE';
       serverStatusBadge.className = 'server-badge online';
     } else {
-      serverStatusBadge.textContent = 'LOCAL SHELD';
+      serverStatusBadge.textContent = 'LOCAL SHIELD';
       serverStatusBadge.className = 'server-badge offline';
     }
   });
@@ -86,20 +88,43 @@ document.addEventListener('DOMContentLoaded', async () => {
       }
 
       const dataUrl = response.dataUrl;
-      analyzeBtn.querySelector('.btn-text')!.textContent = 'ANALYZING THREATS...';
-      aiReportTextEl.innerHTML = '<span class="loading-pulse">Scanning image layout & performing server-side AI OCR verification...</span>';
+      analyzeBtn.querySelector('.btn-text')!.textContent = 'INITIALIZING OCR...';
+      aiReportTextEl.innerHTML = '<span class="loading-pulse">Initializing local sandboxed OCR engine...</span>';
 
-      chrome.runtime.sendMessage(
-        { action: 'analyzeScreenshot', image: dataUrl, filename: 'screenshot_capture.png' },
-        (scanResult) => {
-          resetBtn();
-          if (!scanResult || scanResult.error) {
-            alert('Image analysis failed: ' + (scanResult?.message || 'Server error'));
-            return;
+      try {
+        const worker = await createWorker('eng', 1, {
+          workerPath: chrome.runtime.getURL('tesseract/worker.min.js'),
+          corePath: chrome.runtime.getURL('tesseract/tesseract-core.wasm.js'),
+          langPath: chrome.runtime.getURL('tesseract/'),
+          gzip: false,
+        });
+
+        analyzeBtn.querySelector('.btn-text')!.textContent = 'PERFORMING OCR...';
+        aiReportTextEl.innerHTML = '<span class="loading-pulse">Reading visual layout & text layers locally...</span>';
+
+        const ocrRes = await worker.recognize(dataUrl);
+        const text = ocrRes.data.text.trim();
+        await worker.terminate();
+
+        analyzeBtn.querySelector('.btn-text')!.textContent = 'ANALYZING THREATS...';
+        aiReportTextEl.innerHTML = '<span class="loading-pulse">Running threat signatures matching...</span>';
+
+        chrome.runtime.sendMessage(
+          { action: 'analyzeOcrText', ocrText: text, filename: 'screenshot_capture.png' },
+          (scanResult) => {
+            resetBtn();
+            if (!scanResult || scanResult.error) {
+              alert('Image analysis failed: ' + (scanResult?.message || 'Server error'));
+              return;
+            }
+            renderScanResults(scanResult);
           }
-          renderScanResults(scanResult);
-        }
-      );
+        );
+      } catch (err: any) {
+        console.error('Local OCR Error:', err);
+        alert('Local OCR Engine failed: ' + (err.message || String(err)));
+        resetBtn();
+      }
     });
 
     function resetBtn() {
