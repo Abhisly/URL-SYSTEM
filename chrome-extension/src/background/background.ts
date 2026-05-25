@@ -62,6 +62,13 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
     sendResponse({ success: false });
     return true;
   }
+
+  if (request.action === 'analyzeRegion') {
+    handleAnalyzeRegion(request.coords)
+      .then(sendResponse)
+      .catch((err) => sendResponse({ error: true, message: err.message }));
+    return true;
+  }
 });
 
 // Cache scans and report to the UI
@@ -254,3 +261,68 @@ chrome.tabs.onActivated.addListener((activeInfo) => {
     }
   });
 });
+
+async function handleAnalyzeRegion(coords: any) {
+  return new Promise((resolve, reject) => {
+    chrome.tabs.captureVisibleTab(undefined, { format: 'png' }, async (dataUrl) => {
+      if (chrome.runtime.lastError) {
+        reject(new Error(chrome.runtime.lastError.message));
+        return;
+      }
+      try {
+        const croppedBase64 = await cropImage(dataUrl, coords);
+        // Call backend API for visual scanning
+        const res = await fetch(`${BACKEND_URL}/api/analyze-image`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ image: croppedBase64, filename: 'region_capture.png' })
+        });
+        if (res.ok) {
+          const result = await res.json();
+          resolve(result);
+        } else {
+          const errData = await res.json().catch(() => ({}));
+          throw new Error(errData.message || 'Failed to analyze region.');
+        }
+      } catch (err: any) {
+        console.error('[URL SYSTEM SHIELD] Region analysis failed:', err);
+        resolve({
+          status: 'SUSPICIOUS',
+          confidence: 70,
+          riskLevel: 'MEDIUM',
+          reasons: [{ id: 'OFFLINE_REGION_SCAN', description: 'Backend server is required to analyze image context.', severity: 'medium' }],
+          aiExplanation: `[OFFLINE] Could not analyze the selected region because the URL SYSTEM backend is offline.\n\nPlease start the server (npm run dev:all) to run local server-side OCR and Ollama AI scanning.`
+        });
+      }
+    });
+  });
+}
+
+async function cropImage(dataUrl: string, coords: { x: number, y: number, width: number, height: number, dpr: number }): Promise<string> {
+  const res = await fetch(dataUrl);
+  const blob = await res.blob();
+  const bitmap = await createImageBitmap(blob);
+  
+  const canvas = new OffscreenCanvas(coords.width, coords.height);
+  const ctx = canvas.getContext('2d')!;
+  
+  ctx.drawImage(
+    bitmap,
+    coords.x * coords.dpr,
+    coords.y * coords.dpr,
+    coords.width * coords.dpr,
+    coords.height * coords.dpr,
+    0,
+    0,
+    coords.width,
+    coords.height
+  );
+  
+  const croppedBlob = await canvas.convertToBlob({ type: 'image/png' });
+  return new Promise<string>((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onloadend = () => resolve(reader.result as string);
+    reader.onerror = reject;
+    reader.readAsDataURL(croppedBlob);
+  });
+}

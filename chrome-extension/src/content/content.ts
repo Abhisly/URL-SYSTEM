@@ -5,6 +5,16 @@
   const currentUrl = window.location.href;
   if (!currentUrl.startsWith('http')) return; // Ignore local/extension pages
 
+  let activeHost: HTMLDivElement | null = null;
+  let activeShadow: ShadowRoot | null = null;
+
+  // Listen for messages from background/popup
+  chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
+    if (message.action === 'startAreaSelection') {
+      startAreaSelection();
+    }
+  });
+
   // Wait for document to load
   if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', initShield);
@@ -39,9 +49,11 @@
     host.style.zIndex = '2147483647'; // Max z-index
     host.style.fontFamily = "'Outfit', sans-serif";
     document.body.appendChild(host);
+    activeHost = host;
 
     // 2. Attach Shadow DOM
     const shadow = host.attachShadow({ mode: 'closed' });
+    activeShadow = shadow;
 
     // 3. CSS Styles for Shadow DOM
     const style = document.createElement('style');
@@ -416,6 +428,219 @@
     document.addEventListener('mouseup', () => {
       isDragging = false;
     });
+  }
+
+  function updateFloatingDotUI(result: any) {
+    if (!activeHost || !activeShadow) {
+      injectFloatingDot(result);
+      const panel = activeShadow?.querySelector('.shield-panel') as HTMLElement;
+      if (panel) {
+        panel.style.display = 'flex';
+        setTimeout(() => panel.classList.add('open'), 20);
+      }
+      return;
+    }
+
+    const status = result.status || 'SAFE';
+    const score = result.threatScore !== undefined ? result.threatScore : 0;
+    const confidence = result.confidence || 0;
+    const explanation = result.aiExplanation || 'No report explanation available.';
+    const reasons = result.reasons || [];
+
+    // Update Badge
+    const badge = activeShadow.querySelector('.shield-badge') as HTMLElement;
+    if (badge) {
+      badge.className = `shield-badge ${status.toLowerCase()}`;
+      const label = badge.querySelector('.shield-label') as HTMLElement;
+      if (label) {
+        label.textContent = status === 'MALICIOUS' ? 'PHISHING RISK' : `${status} SITE`;
+      }
+    }
+
+    // Update Dot
+    const dot = activeShadow.querySelector('.shield-dot') as HTMLElement;
+    if (dot) {
+      dot.className = `shield-dot ${status.toLowerCase()}`;
+    }
+
+    // Update Panel Verdict
+    const vTag = activeShadow.querySelector('.verdict-tag') as HTMLElement;
+    if (vTag) {
+      vTag.className = `verdict-tag ${status.toLowerCase()}`;
+      vTag.textContent = status === 'MALICIOUS' ? 'PHISHING DETECTED' : (status === 'SUSPICIOUS' ? 'SUSPICIOUS WEB' : 'VERIFIED SAFE');
+    }
+
+    const vMeta = activeShadow.querySelector('.verdict-meta') as HTMLElement;
+    if (vMeta) {
+      vMeta.textContent = `Confidence: ${confidence}% | Threat Score: ${score}/100`;
+    }
+
+    const aiRep = activeShadow.querySelector('.ai-report') as HTMLElement;
+    if (aiRep) {
+      aiRep.textContent = explanation;
+    }
+
+    // Update Reasons
+    let reasonsContainer = activeShadow.querySelector('.threat-reasons') as HTMLElement;
+    if (reasonsContainer) {
+      reasonsContainer.innerHTML = '';
+    } else if (reasons.length > 0) {
+      reasonsContainer = document.createElement('div');
+      reasonsContainer.className = 'threat-reasons';
+      const panel = activeShadow.querySelector('.shield-panel') as HTMLElement;
+      if (panel) {
+        panel.appendChild(reasonsContainer);
+      }
+    }
+
+    if (reasonsContainer && reasons.length > 0) {
+      reasons.forEach((r: any) => {
+        const item = document.createElement('div');
+        item.className = `reason-item ${r.severity || 'low'}`;
+        item.textContent = `[${r.id}] ${r.description}`;
+        reasonsContainer.appendChild(item);
+      });
+    }
+
+    // Force Open Panel
+    const panel = activeShadow.querySelector('.shield-panel') as HTMLElement;
+    if (panel) {
+      panel.style.display = 'flex';
+      setTimeout(() => panel.classList.add('open'), 20);
+    }
+  }
+
+  function showLoadingState(msg: string) {
+    updateFloatingDotUI({
+      status: 'SUSPICIOUS',
+      confidence: 50,
+      threatScore: 0,
+      aiExplanation: msg,
+      reasons: []
+    });
+    const aiRep = activeShadow?.querySelector('.ai-report') as HTMLElement;
+    if (aiRep) {
+      aiRep.innerHTML = `<span style="display:inline-block;animation:pulse 1.5s infinite;color:#6366f1;">${msg}</span>`;
+    }
+  }
+
+  function startAreaSelection() {
+    // 1. Create a fullscreen overlay canvas
+    const overlay = document.createElement('canvas');
+    overlay.style.position = 'fixed';
+    overlay.style.top = '0';
+    overlay.style.left = '0';
+    overlay.style.width = '100vw';
+    overlay.style.height = '100vh';
+    overlay.style.zIndex = '2147483646'; // Below floating dot but above the site
+    overlay.style.cursor = 'crosshair';
+    document.body.appendChild(overlay);
+
+    const ctx = overlay.getContext('2d')!;
+    const dpr = window.devicePixelRatio || 1;
+    const width = window.innerWidth;
+    const height = window.innerHeight;
+    overlay.width = width * dpr;
+    overlay.height = height * dpr;
+    ctx.scale(dpr, dpr);
+
+    let isSelecting = false;
+    let startX = 0;
+    let startY = 0;
+    let endX = 0;
+    let endY = 0;
+
+    function drawOverlay(x = 0, y = 0, w = 0, h = 0) {
+      ctx.clearRect(0, 0, width, height);
+      ctx.fillStyle = 'rgba(7, 5, 16, 0.65)';
+      ctx.fillRect(0, 0, width, height);
+
+      if (w > 0 && h > 0) {
+        ctx.save();
+        ctx.globalCompositeOperation = 'destination-out';
+        ctx.fillStyle = '#000';
+        ctx.fillRect(x, y, w, h);
+        ctx.restore();
+
+        ctx.strokeStyle = '#6366f1';
+        ctx.lineWidth = 2;
+        ctx.setLineDash([6, 4]);
+        ctx.strokeRect(x, y, w, h);
+
+        ctx.fillStyle = '#6366f1';
+        ctx.font = '10px Space Grotesk, sans-serif';
+        const txt = `${Math.round(w)} x ${Math.round(h)}`;
+        const textWidth = ctx.measureText(txt).width;
+        
+        const labelY = y - 20 >= 0 ? y - 20 : y + h + 5;
+        ctx.fillRect(x, labelY, textWidth + 12, 16);
+        ctx.fillStyle = '#ffffff';
+        ctx.fillText(txt, x + 6, labelY + 11);
+      }
+    }
+
+    drawOverlay();
+
+    overlay.addEventListener('mousedown', (e) => {
+      if (e.button !== 0) return;
+      isSelecting = true;
+      startX = e.clientX;
+      startY = e.clientY;
+      endX = startX;
+      endY = startY;
+    });
+
+    overlay.addEventListener('mousemove', (e) => {
+      if (!isSelecting) return;
+      endX = e.clientX;
+      endY = e.clientY;
+      const x = Math.min(startX, endX);
+      const y = Math.min(startY, endY);
+      const w = Math.abs(startX - endX);
+      const h = Math.abs(startY - endY);
+      drawOverlay(x, y, w, h);
+    });
+
+    overlay.addEventListener('mouseup', () => {
+      if (!isSelecting) return;
+      isSelecting = false;
+      
+      const x = Math.min(startX, endX);
+      const y = Math.min(startY, endY);
+      const w = Math.abs(startX - endX);
+      const h = Math.abs(startY - endY);
+
+      overlay.remove();
+
+      if (w > 15 && h > 15) {
+        showLoadingState('Capturing selected area and sending to AI backend...');
+
+        chrome.runtime.sendMessage({
+          action: 'analyzeRegion',
+          coords: { x, y, width: w, height: h, dpr }
+        }, (result) => {
+          if (result && !result.error) {
+            updateFloatingDotUI(result);
+          } else {
+            updateFloatingDotUI({
+              status: 'SUSPICIOUS',
+              confidence: 50,
+              threatScore: 0,
+              aiExplanation: result?.message || 'Failed to analyze selected region.',
+              reasons: []
+            });
+          }
+        });
+      }
+    });
+
+    const handleKeydown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        overlay.remove();
+        document.removeEventListener('keydown', handleKeydown);
+      }
+    };
+    document.addEventListener('keydown', handleKeydown);
   }
 
   // Listen for messages from the host webpage to register the backend URL dynamically

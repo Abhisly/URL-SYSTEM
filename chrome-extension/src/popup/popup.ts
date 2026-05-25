@@ -10,6 +10,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   const serverStatusBadge = document.getElementById('server-status-badge') as HTMLElement;
   const headerStatusDot = document.getElementById('header-status-dot') as HTMLElement;
   const analyzeBtn = document.getElementById('analyze-screenshot-btn') as HTMLButtonElement;
+  const analyzeRegionBtn = document.getElementById('analyze-region-btn') as HTMLButtonElement;
   const threatDetailsCard = document.getElementById('threat-details-card') as HTMLElement;
   const reasonsList = document.getElementById('reasons-list') as HTMLElement;
 
@@ -64,11 +65,13 @@ document.addEventListener('DOMContentLoaded', async () => {
       verdictTextEl.className = 'verdict-value unknown';
       aiReportTextEl.textContent = result?.message || 'Connection to the scanning core failed.';
       analyzeBtn.disabled = true;
+      analyzeRegionBtn.disabled = true;
       return;
     }
 
     // Enable screenshot analysis if it is a standard webpage
     analyzeBtn.disabled = false;
+    analyzeRegionBtn.disabled = false;
 
     // Render results
     renderScanResults(result);
@@ -97,6 +100,7 @@ document.addEventListener('DOMContentLoaded', async () => {
           corePath: chrome.runtime.getURL('tesseract/tesseract-core.wasm.js'),
           langPath: chrome.runtime.getURL('tesseract/'),
           gzip: false,
+          workerBlobURL: false,
         });
 
         analyzeBtn.querySelector('.btn-text')!.textContent = 'PERFORMING OCR...';
@@ -130,6 +134,13 @@ document.addEventListener('DOMContentLoaded', async () => {
     function resetBtn() {
       analyzeBtn.disabled = false;
       analyzeBtn.querySelector('.btn-text')!.textContent = originalBtnText;
+    }
+  });
+
+  analyzeRegionBtn.addEventListener('click', () => {
+    if (activeTabId) {
+      chrome.tabs.sendMessage(activeTabId, { action: 'startAreaSelection' });
+      window.close(); // Close the popup window to let the user select the area
     }
   });
 

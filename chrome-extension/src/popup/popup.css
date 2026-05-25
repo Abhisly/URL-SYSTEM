@@ -226,7 +226,22 @@ body {
 
 /* Action Panel */
 .action-panel {
+  display: flex;
+  gap: 8px;
   margin-bottom: 8px;
+}
+
+.btn-secondary {
+  background-color: rgba(255, 255, 255, 0.05);
+  border: 1px solid var(--border-color);
+  color: #cbd5e1;
+  box-shadow: none;
+}
+
+.btn-secondary:hover:not(:disabled) {
+  background-color: rgba(255, 255, 255, 0.1);
+  border-color: rgba(255, 255, 255, 0.2);
+  box-shadow: none;
 }
 
 .btn {
