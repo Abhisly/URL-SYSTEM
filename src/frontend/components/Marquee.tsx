@@ -54,7 +54,7 @@ export const Marquee = React.forwardRef<HTMLDivElement, MarqueeProps>(
               <span
                 className={`${fontSizeClasses[fontSize]} font-bold text-transparent px-4 tracking-tighter`}
                 style={{
-                  WebkitTextStroke: `${strokeWidth} rgba(255,255,255,0.15)`,
+                  WebkitTextStroke: `${strokeWidth} rgba(255,255,255,0.4)`,
                 }}
               >
                 {text}

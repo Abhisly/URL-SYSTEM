@@ -75,13 +75,18 @@ export default function CoreInterface() {
   const inputValue = activeMode === 'URL' ? urlValue : emailValue;
 
   return (
-    <div className="h-screen w-screen text-white overflow-hidden relative selection:bg-white selection:text-black">
+    <motion.div 
+      initial={{ opacity: 0, filter: 'blur(8px)' }}
+      animate={{ opacity: 1, filter: 'blur(0px)' }}
+      transition={{ duration: 1.2, ease: [0.16, 1, 0.3, 1] }}
+      className="h-screen w-screen text-white overflow-hidden relative selection:bg-white selection:text-black"
+    >
 
       {/* ── Background ── */}
       <div className="absolute inset-0 z-0 h-full w-full [background:radial-gradient(125%_125%_at_50%_10%,#000_40%,#63e_100%)]" />
 
       {/* ── Marquee ── */}
-      <div className="absolute bottom-0 left-0 w-screen overflow-hidden pointer-events-none z-0 opacity-20">
+      <div className="absolute bottom-0 left-0 w-screen overflow-hidden pointer-events-none z-0 opacity-40">
         <Marquee text="GLOBAL THREAT NETWORK MONITORING // DEEP NEURAL SCANNING // SECURE UPLINK ESTABLISHED // " />
       </div>
 
@@ -322,6 +327,6 @@ export default function CoreInterface() {
           </motion.div>
         )}
       </AnimatePresence>
-    </div>
+    </motion.div>
   );
 }
