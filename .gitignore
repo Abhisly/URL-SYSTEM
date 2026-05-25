@@ -3,6 +3,7 @@
 # dependencies
 /node_modules
 /chrome-extension/node_modules
+/chrome-extension/localHeuristics.js
 /.pnp
 .pnp.*
 .yarn/*
