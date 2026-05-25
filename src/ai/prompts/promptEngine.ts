@@ -16,11 +16,11 @@ export function buildUrlPrompt(enrichedContext: string, heuristicReasons: Threat
     : 'No heuristic flags detected.';
 
   return `
-You are a world-class cybersecurity forensics AI specializing in URL threat analysis, phishing detection, and brand impersonation.
+You are a world-class cybersecurity forensics AI specializing in URL threat analysis, phishing detection, brand impersonation, and live browser scan telemetry evaluation.
 
-Your job is to ACCURATELY classify whether this URL is legitimate, suspicious, or malicious. You must NOT default to "safe" if there are red flags. Be honest and precise.
+Your job is to ACCURATELY classify whether this URL is legitimate, suspicious, or malicious. Analyze the target information obtained from our headless browser simulator.
 
-Target Information:
+Target Information (Simulated Browser Scan):
 ${enrichedContext}
 
 ${historicalMemory ? historicalMemory + '\n' : ''}
@@ -32,13 +32,16 @@ FORENSIC ANALYSIS RULES (FOLLOW STRICTLY):
 3. If the URL uses a raw IP address, it is ALMOST ALWAYS malicious.
 4. If the URL domain is different from what the page title claims (e.g., URL is "evl-login.net" but title says "PayPal — Secure Login"), this is a PHISHING ATTACK.
 5. Legitimate websites like Google, Amazon, PayPal have clean, short, official domains. They do NOT use hyphens, weird TLDs, or subdomains to hide their apex domain.
-6. Only output "SAFE" if the domain is an established, recognizable legitimate website with NO suspicious structural indicators.
+6. Pay close attention to the Redirect Chain: If the URL redirects from a secure site (HTTPS) to an insecure site (HTTP), or redirects to a completely different domain with suspicious keywords, raise the threat level to HIGH RISK.
+7. Check the Security Headers: Legitimate banking, payment, or authentication sites ALWAYS implement security headers like HSTS and X-Frame-Options to prevent clickjacking and session spoofing. If a portal claiming to be a financial or login service lacks HSTS/CSP, treat it as highly SUSPICIOUS or MALICIOUS.
+8. Only output "SAFE" if the domain is an established, recognizable legitimate website with NO suspicious structural indicators.
 
 YOUR TASK — write the "aiExplanation" as a forensic 4-6 sentence paragraph doing ALL of:
-1. IDENTIFY the apex domain and TLD — is it an official registered domain of a real company, or does it look fabricated/suspicious?
-2. ASSESS all structural anomalies: hyphens, suspicious keywords, subdomain depth, TLD reputation, page title vs domain mismatch.
-3. Cross-check the heuristic flags: what do they indicate collectively about the URL's intent?
-4. CONCLUDE with a clear, unambiguous security verdict. If dangerous: warn the user NOT to click it and state why. If safe: explain why it's legitimate.
+1. IDENTIFY the apex domain, TLD, and resolved IP — is it hosted on a known public provider or suspicious subnet?
+2. EVALUATE browser execution metrics: redirects, SSL connection security, and DOM scripts count.
+3. ASSESS all structural anomalies: hyphens, suspicious keywords, TLD reputation, page title vs domain mismatch.
+4. Cross-check the heuristic flags: what do they indicate collectively about the URL's intent?
+5. CONCLUDE with a clear, unambiguous security verdict. If dangerous: warn the user NOT to visit and state why. If safe: explain why it's legitimate.
 
 ${JSON_FORMAT_INSTRUCTIONS}
 `;

@@ -1,4 +1,4 @@
-export type ScanStatus = 'SAFE' | 'SUSPICIOUS' | 'MALICIOUS' | 'GENUINE' | 'SPOOFED' | 'UNKNOWN';
+export type ScanStatus = 'SAFE' | 'SUSPICIOUS' | 'MALICIOUS' | 'GENUINE' | 'SPOOFED' | 'UNKNOWN' | 'INVALID';
 export type RiskLevel = 'LOW' | 'MEDIUM' | 'HIGH' | 'CRITICAL';
 
 export interface ThreatReason {
@@ -16,8 +16,45 @@ export interface BaseScanResponse {
   detectedPatterns?: string[];
 }
 
+export interface BrowserScanReport {
+  testedAt: string;
+  userAgent: string;
+  dns: {
+    resolved: boolean;
+    ip?: string;
+    lookupTimeMs: number;
+    error?: string;
+  };
+  connection: {
+    status: 'SECURE' | 'INSECURE' | 'FAILED';
+    protocol?: string;
+    handshakeTimeMs: number;
+    sslVerified: boolean;
+  };
+  http: {
+    statusCode?: number;
+    statusText?: string;
+    redirectChain: string[];
+    responseTimeMs: number;
+    headers: Record<string, string>;
+  };
+  dom: {
+    title?: string;
+    description?: string;
+    elementCount?: number;
+    scriptsDetected?: number;
+  };
+  securityHeaders: {
+    hsts: boolean;
+    xFrameOptions?: string;
+    csp: boolean;
+    xContentTypeOptions?: string;
+  };
+}
+
 export interface URLScanResponse extends BaseScanResponse {
   threatScore: number;
+  browserReport?: BrowserScanReport;
 }
 
 export type EmailScanResponse = BaseScanResponse;

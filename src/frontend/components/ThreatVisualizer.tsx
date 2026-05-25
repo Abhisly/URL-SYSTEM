@@ -2,19 +2,16 @@
 import { motion, AnimatePresence } from 'framer-motion';
 import { useState, useEffect } from 'react';
 
-// Smooth animated number counter
+// ── Smooth animated counter ──────────────────────────────────────────
 function useCountUp(target: number, duration = 1200) {
   const [value, setValue] = useState(0);
   useEffect(() => {
     let start: number | null = null;
-    const from = 0;
     const step = (ts: number) => {
       if (!start) start = ts;
-      const elapsed = ts - start;
-      const pct = Math.min(elapsed / duration, 1);
-      // Ease out cubic
+      const pct = Math.min((ts - start) / duration, 1);
       const eased = 1 - Math.pow(1 - pct, 3);
-      setValue(Math.round(from + (target - from) * eased));
+      setValue(Math.round(target * eased));
       if (pct < 1) requestAnimationFrame(step);
     };
     requestAnimationFrame(step);
@@ -22,7 +19,7 @@ function useCountUp(target: number, duration = 1200) {
   return value;
 }
 
-// Typing effect hook
+// ── Typing effect ────────────────────────────────────────────────────
 function useTypingEffect(text: string, speed = 12) {
   const [displayed, setDisplayed] = useState('');
   useEffect(() => {
@@ -38,229 +35,228 @@ function useTypingEffect(text: string, speed = 12) {
   return displayed;
 }
 
-// Animated circular threat score ring
-function ThreatRing({ score, isSafe }: { score: number; isSafe: boolean }) {
-  const radius = 54;
-  const circumference = 2 * Math.PI * radius;
-  const [animated, setAnimated] = useState(0);
+// ── External URL helper ──────────────────────────────────────────────
+function formatExternalUrl(url?: string): string {
+  if (!url) return '';
+  const trimmed = url.trim();
+  return /^https?:\/\//i.test(trimmed) ? trimmed : `https://${trimmed}`;
+}
 
-  useEffect(() => {
-    const timeout = setTimeout(() => setAnimated(score), 100);
-    return () => clearTimeout(timeout);
-  }, [score]);
+// ── Threat Score Ring ────────────────────────────────────────────────
+function ThreatRing({ score, isSafe, isInvalid }: { score: number; isSafe: boolean; isInvalid: boolean }) {
+  const R = 44, C = 2 * Math.PI * R;
+  const count = useCountUp(score, 1400);
+  const glowColor = isInvalid ? '#facc15' : isSafe ? '#a78bfa' : score > 75 ? '#f87171' : '#fb923c';
+  const trackColor = isInvalid ? 'rgba(250,204,21,0.15)' : isSafe ? 'rgba(167,139,250,0.15)' : score > 75 ? 'rgba(248,113,113,0.15)' : 'rgba(251,146,60,0.15)';
+  const offset = C - (C * (isSafe ? 0 : score / 100));
 
-  const strokeDashoffset = circumference - (animated / 100) * circumference;
-  const color = isSafe ? 'rgba(255,255,255,0.9)' : score > 75 ? '#ef4444' : '#f97316';
-  const glowColor = isSafe ? 'rgba(255,255,255,0.4)' : score > 75 ? 'rgba(239,68,68,0.5)' : 'rgba(249,115,22,0.5)';
+  if (isInvalid) {
+    return (
+      <div className="flex flex-col items-center justify-center w-[100px] h-[100px] shrink-0">
+        <div className="w-20 h-20 rounded-full flex items-center justify-center"
+          style={{ background: 'rgba(250,204,21,0.08)', border: '1px solid rgba(250,204,21,0.25)' }}>
+          <svg width="28" height="28" viewBox="0 0 24 24" fill="none">
+            <path d="M12 9v4M12 17h.01M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"
+              stroke="#facc15" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+          </svg>
+        </div>
+        <span className="text-[8px] tracking-[0.3em] uppercase mt-2" style={{ color: 'rgba(250,204,21,0.6)' }}>INVALID</span>
+      </div>
+    );
+  }
 
   return (
-    <div className="relative flex items-center justify-center" style={{ width: 140, height: 140 }}>
-      <svg width="140" height="140" style={{ transform: 'rotate(-90deg)', position: 'absolute' }}>
-        {/* Background track */}
-        <circle cx="70" cy="70" r={radius} fill="none" stroke="rgba(255,255,255,0.05)" strokeWidth="6" />
-        {/* Animated progress arc */}
+    <div className="relative flex items-center justify-center w-[100px] h-[100px] shrink-0">
+      <svg width="100" height="100" viewBox="0 0 100 100" style={{ transform: 'rotate(-90deg)' }}>
+        <circle cx="50" cy="50" r={R} fill="none" stroke={trackColor} strokeWidth="5" />
         <motion.circle
-          cx="70" cy="70" r={radius} fill="none"
-          stroke={color}
-          strokeWidth="6"
+          cx="50" cy="50" r={R} fill="none"
+          stroke={glowColor} strokeWidth="5"
           strokeLinecap="round"
-          strokeDasharray={circumference}
-          initial={{ strokeDashoffset: circumference }}
-          animate={{ strokeDashoffset }}
-          transition={{ duration: 1.4, ease: [0.16, 1, 0.3, 1] as const, delay: 0.3 }}
-          style={{ filter: `drop-shadow(0 0 8px ${glowColor})` }}
+          strokeDasharray={C}
+          initial={{ strokeDashoffset: C }}
+          animate={{ strokeDashoffset: offset }}
+          transition={{ duration: 1.4, ease: [0.16, 1, 0.3, 1], delay: 0.3 }}
+          style={{ filter: `drop-shadow(0 0 6px ${glowColor})` }}
         />
       </svg>
-      {/* Center content */}
-      <div className="flex flex-col items-center z-10">
-        <ThreatScoreNumber score={score} isSafe={isSafe} />
-        <span className="text-[9px] tracking-[0.35em] text-white/30 uppercase mt-0.5">THREAT</span>
+      <div className="absolute flex flex-col items-center">
+        <span className="text-[22px] font-light tabular-nums" style={{ color: glowColor }}>
+          {count}<span className="text-[11px] opacity-50">%</span>
+        </span>
+        <span className="text-[7px] tracking-[0.3em] uppercase" style={{ color: 'rgba(255,255,255,0.3)' }}>THREAT</span>
       </div>
     </div>
   );
 }
 
-function ThreatScoreNumber({ score, isSafe }: { score: number; isSafe: boolean }) {
-  const count = useCountUp(score, 1400);
-  const color = isSafe ? 'text-white' : score > 75 ? 'text-red-400' : 'text-orange-400';
+// ── Visit Site Link ──────────────────────────────────────────────────
+function VisitSiteLink({ url }: { url: string }) {
+  const [isHovered, setIsHovered] = useState(false);
   return (
-    <span className={`text-3xl font-light font-mono tabular-nums ${color}`}>
-      {count}<span className="text-sm opacity-50">%</span>
-    </span>
+    <motion.a
+      href={formatExternalUrl(url)}
+      target="_blank"
+      rel="noopener noreferrer"
+      onMouseEnter={() => setIsHovered(true)}
+      onMouseLeave={() => setIsHovered(false)}
+      className="relative uppercase text-[15px] tracking-[0.4em] font-mono flex items-center gap-4 cursor-pointer select-none text-white/50 hover:text-white transition-colors duration-300 py-3 px-8 rounded-full focus:outline-none focus-visible:outline-none"
+      style={{
+        border: 'none',
+        outline: 'none',
+      }}
+    >
+      {/* Floating Pill Background & Border on Hover */}
+      <AnimatePresence>
+        {isHovered && (
+          <motion.span
+            key="hover-pill"
+            initial={{ opacity: 0, scale: 0.92 }}
+            animate={{ opacity: 1, scale: 1 }}
+            exit={{ opacity: 0, scale: 1.04 }}
+            transition={{ duration: 0.28, ease: [0.16, 1, 0.3, 1] }}
+            className="absolute rounded-full pointer-events-none"
+            style={{
+              inset: 0,
+              margin: '-12px -36px',
+              background: 'rgba(255,255,255,0.07)',
+              border: '1.5px solid rgba(255,255,255,0.28)',
+              boxShadow: '0 0 32px rgba(255,255,255,0.1), inset 0 1px 0 rgba(255,255,255,0.15)',
+            }}
+          />
+        )}
+      </AnimatePresence>
+
+      <span className="relative z-10 font-semibold mr-[-0.4em]">VISIT SECURED SITE</span>
+      <svg
+        className="relative z-10 w-5 h-5 transition-transform duration-300"
+        style={{ transform: isHovered ? 'translate(2px, -2px)' : 'none' }}
+        fill="none" stroke="currentColor" viewBox="0 0 24 24"
+      >
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
+          d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+      </svg>
+    </motion.a>
   );
 }
 
+// ── Main ThreatVisualizer ────────────────────────────────────────────
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-export default function ThreatVisualizer({ result }: { result: any }) {
+export default function ThreatVisualizer({ result, targetUrl }: { result: any; targetUrl?: string }) {
   const isSafe = result?.status === 'SAFE' || result?.status === 'GENUINE';
-  const threatScore = typeof result?.threatScore === 'number' ? result.threatScore
+  const isInvalid = result?.status === 'INVALID';
+  const isMalicious = result?.status === 'MALICIOUS';
+  const isSuspicious = result?.status === 'SUSPICIOUS' || result?.status === 'SPOOFED';
+
+  const threatScore = typeof result?.threatScore === 'number'
+    ? result.threatScore
     : typeof result?.confidence === 'number' ? (isSafe ? 100 - result.confidence : result.confidence) : 0;
   const confidence = result?.confidence ?? 0;
-  const riskLevel: string = result?.riskLevel ?? 'UNKNOWN';
-  const patterns: string[] = Array.isArray(result?.detectedPatterns) ? result.detectedPatterns : [];
-  const reasons: { description: string; severity: string }[] = Array.isArray(result?.reasons) ? result.reasons : [];
+  const riskLevel: string = isInvalid ? 'N/A' : (result?.riskLevel ?? 'UNKNOWN');
   const explanation = useTypingEffect((result?.aiExplanation as string) || 'Target verified. No threats detected.', 8);
 
-  const accentColor = isSafe ? 'rgba(255,255,255,0.9)' : threatScore > 75 ? '#ef4444' : '#f97316';
-  const accentMuted = isSafe ? 'rgba(255,255,255,0.08)' : threatScore > 75 ? 'rgba(239,68,68,0.08)' : 'rgba(249,115,22,0.08)';
-  const borderColor = isSafe ? 'rgba(255,255,255,0.07)' : threatScore > 75 ? 'rgba(239,68,68,0.2)' : 'rgba(249,115,22,0.2)';
-  const textAccent = isSafe ? 'text-white' : threatScore > 75 ? 'text-red-400' : 'text-orange-400';
-  const statusLabel = isSafe ? 'SECURE' : result?.status ?? 'THREAT DETECTED';
+  // Single colour source of truth
+  const accent = isInvalid ? '#facc15' : isSafe ? '#a78bfa' : isMalicious ? '#f87171' : isSuspicious ? '#fb923c' : '#a78bfa';
+  const statusLabel = isInvalid ? 'INVALID' : isSafe ? 'SECURE' : isMalicious ? 'MALICIOUS' : result?.status ?? 'UNKNOWN';
+  const statusSub = isInvalid ? 'Domain unreachable' : isSafe ? 'No threats detected' : isMalicious ? 'Threat confirmed' : isSuspicious ? 'Suspicious activity' : 'Analysis complete';
 
-  const containerVariants = {
-    hidden: { opacity: 0 },
-    visible: { opacity: 1, transition: { staggerChildren: 0.12, delayChildren: 0.1 } }
-  };
-  const itemVariants = {
-    hidden: { opacity: 0, y: 24, filter: 'blur(8px)' },
-    visible: { opacity: 1, y: 0, filter: 'blur(0px)', transition: { duration: 0.7, ease: [0.16, 1, 0.3, 1] as const } }
+  const fadeUp = {
+    hidden: { opacity: 0, y: 20, filter: 'blur(8px)' },
+    visible: (i: number) => ({
+      opacity: 1, y: 0, filter: 'blur(0px)',
+      transition: { duration: 0.7, delay: i * 0.12, ease: [0.16, 1, 0.3, 1] as const }
+    })
   };
 
   return (
-    <motion.div
-      variants={containerVariants}
-      initial="hidden"
-      animate="visible"
-      className="flex flex-col gap-6 w-full max-w-4xl mt-6 font-mono"
-    >
-      {/* ── ROW 1: Status header + Threat ring + Confidence ── */}
+    <div className="w-full font-mono flex flex-col gap-14">
+
+      {/* ── SECTION 1: Score ring + Status + Confidence ── */}
       <motion.div
-        variants={itemVariants}
-        className="flex flex-col md:flex-row items-center gap-6 w-full"
-        style={{
-          background: accentMuted,
-          border: `1px solid ${borderColor}`,
-          borderRadius: 16,
-          padding: '28px 36px',
-          backdropFilter: 'blur(12px)',
-          position: 'relative',
-          overflow: 'hidden',
-        }}
+        custom={0}
+        variants={fadeUp}
+        initial="hidden"
+        animate="visible"
+        className="flex flex-col md:flex-row items-center justify-between gap-12"
       >
-        {/* Top accent line */}
-        <div style={{
-          position: 'absolute', top: 0, left: '10%', right: '10%', height: 1,
-          background: `linear-gradient(to right, transparent, ${accentColor}, transparent)`,
-          opacity: 0.5,
-        }} />
-
-        {/* Threat Score Ring */}
-        <ThreatRing score={threatScore} isSafe={isSafe} />
-
-        {/* Divider */}
-        <div className="hidden md:block w-[1px] self-stretch" style={{ background: borderColor }} />
-
-        {/* Status text block */}
-        <div className="flex flex-col flex-1 items-center md:items-start gap-2 text-center md:text-left">
-          <span className="text-[9px] tracking-[0.45em] text-white/30 uppercase">Analysis Result</span>
-          <span className={`text-[26px] md:text-[32px] font-bold tracking-[0.25em] uppercase leading-none ${textAccent}`}>
-            {statusLabel}
-          </span>
-          <div className="flex flex-wrap gap-3 mt-2 justify-center md:justify-start">
-            <span className="text-[9px] tracking-[0.35em] text-white/25 uppercase">Risk:
-              <span className={`ml-2 ${textAccent} font-bold`}>{riskLevel}</span>
+        {/* Left side: Threat Ring + Status Label */}
+        <div className="flex items-center gap-8">
+          <ThreatRing score={threatScore} isSafe={isSafe} isInvalid={isInvalid} />
+          
+          <div className="flex flex-col gap-2 min-w-0">
+            <span className="text-[10px] tracking-[0.55em] uppercase text-white/30">
+              Analysis Result
             </span>
-            <span className="text-[9px] tracking-[0.35em] text-white/25 uppercase">Confidence:
-              <span className="ml-2 text-white font-bold">{confidence}%</span>
+            <span className="text-[44px] md:text-[54px] font-extralight tracking-[-0.03em] leading-none" style={{ color: accent }}>
+              {statusLabel}
+            </span>
+            <span className="text-[10px] tracking-[0.25em] uppercase text-white/40">
+              {statusSub}
             </span>
           </div>
         </div>
 
-        {/* Confidence arc (right) */}
-        <div className="flex flex-col items-center gap-1 md:border-l md:border-white/10 md:pl-8">
-          <span className="text-[9px] tracking-[0.35em] text-white/30 uppercase">Confidence</span>
-          <span className="text-4xl font-light text-white tabular-nums">{confidence}<span className="text-lg opacity-40">%</span></span>
-          {/* Mini bar */}
-          <div className="w-20 h-[2px] bg-white/10 rounded-full overflow-hidden mt-1">
+        {/* Right side: Confidence & Risk Level */}
+        <div className="flex flex-col items-center md:items-end gap-3.5 shrink-0">
+          <span className="text-[10px] tracking-[0.45em] uppercase text-white/30">
+            Confidence
+          </span>
+          <div className="flex items-baseline gap-1">
+            <span className="text-[44px] font-extralight tabular-nums text-white leading-none">
+              {confidence}
+            </span>
+            <span className="text-[18px] opacity-30">%</span>
+          </div>
+          <div className="w-36 h-[3px] rounded-full overflow-hidden bg-white/10">
             <motion.div
-              className="h-full rounded-full bg-white/70"
+              className="h-full rounded-full"
               initial={{ width: 0 }}
               animate={{ width: `${confidence}%` }}
-              transition={{ duration: 1.2, delay: 0.5, ease: [0.16, 1, 0.3, 1] as const }}
+              transition={{ duration: 1.3, delay: 0.4, ease: [0.16, 1, 0.3, 1] }}
+              style={{ background: accent }}
             />
           </div>
+          <span className="text-[10px] tracking-[0.3em] uppercase text-white/25">
+            Risk Assessment:&nbsp;<span style={{ color: accent }}>{riskLevel}</span>
+          </span>
         </div>
       </motion.div>
 
-      {/* ── ROW 2: AI Explanation ── */}
+      {/* ── SECTION 2: Neural Analysis ── */}
       <motion.div
-        variants={itemVariants}
-        style={{
-          background: 'rgba(255,255,255,0.012)',
-          border: `1px solid ${borderColor}`,
-          borderRadius: 16,
-          padding: '28px 36px',
-          backdropFilter: 'blur(8px)',
-          position: 'relative',
-          overflow: 'hidden',
-        }}
+        custom={1}
+        variants={fadeUp}
+        initial="hidden"
+        animate="visible"
+        className="flex flex-col gap-4"
       >
-        {/* Left accent bar */}
-        <div style={{
-          position: 'absolute', top: 0, left: 0, bottom: 0, width: 2,
-          background: `linear-gradient(to bottom, transparent, ${accentColor}, transparent)`,
-          opacity: 0.5,
-        }} />
-
-        <span className="text-[9px] tracking-[0.45em] text-white/25 uppercase block mb-4">Neural Analysis</span>
-        <p className="text-[14px] md:text-[16px] leading-[2] tracking-[0.03em] font-sans font-light text-white/80">
+        <span className="text-[10px] tracking-[0.55em] uppercase text-white/30">
+          Neural Analysis
+        </span>
+        <p className="text-[16px] md:text-[18px] font-sans font-light leading-[2.1] text-white/80 tracking-wide">
           {explanation}
           <motion.span
             animate={{ opacity: [1, 0] }}
-            transition={{ duration: 0.7, repeat: Infinity }}
-            className="inline-block w-[2px] h-[16px] ml-1.5 align-middle"
-            style={{ background: accentColor }}
+            transition={{ duration: 0.65, repeat: Infinity }}
+            className="inline-block w-[2px] h-[14px] ml-1 align-middle rounded-full"
+            style={{ background: accent }}
           />
         </p>
       </motion.div>
 
-      {/* ── ROW 3: Reasons + Patterns ── */}
-      <AnimatePresence>
-        {reasons.length > 0 && (
-          <motion.div variants={itemVariants} className="flex flex-col gap-3">
-            <span className="text-[9px] tracking-[0.45em] text-white/25 uppercase">Threat Indicators</span>
-            <div className="flex flex-col gap-2">
-              {reasons.map((r, i) => (
-                <motion.div
-                  key={i}
-                  initial={{ opacity: 0, x: -10 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  transition={{ delay: 0.6 + i * 0.08, duration: 0.5 }}
-                  style={{ border: `1px solid ${borderColor}`, borderRadius: 10 }}
-                  className="flex items-start gap-4 px-5 py-3 bg-white/[0.015]"
-                >
-                  <span className={`text-[9px] font-bold tracking-[0.3em] uppercase mt-0.5 shrink-0 ${
-                    r.severity === 'high' ? 'text-red-400' : r.severity === 'medium' ? 'text-orange-400' : 'text-white/40'
-                  }`}>
-                    {r.severity}
-                  </span>
-                  <span className="text-[12px] tracking-[0.05em] text-white/60 font-sans font-light leading-relaxed">{r.description}</span>
-                </motion.div>
-              ))}
-            </div>
-          </motion.div>
-        )}
-      </AnimatePresence>
-
-      {/* Detected Patterns */}
-      {patterns.length > 0 && (
-        <motion.div variants={itemVariants} className="flex flex-wrap gap-2 justify-center md:justify-start">
-          {patterns.map((pattern, idx) => (
-            <motion.span
-              key={idx}
-              initial={{ opacity: 0, scale: 0.85 }}
-              animate={{ opacity: 1, scale: 1 }}
-              transition={{ delay: 0.8 + idx * 0.07, type: 'spring', stiffness: 200 }}
-              style={{ border: `1px solid ${borderColor}` }}
-              className={`text-[9px] tracking-[0.25em] px-4 py-2 rounded-full uppercase backdrop-blur-sm ${
-                isSafe ? 'text-white/40 bg-white/5' : 'text-orange-400/80 bg-orange-500/5'
-              }`}
-            >
-              {pattern.replace(/_/g, ' ')}
-            </motion.span>
-          ))}
+      {/* ── SECTION 2.5: Visit CTA ── */}
+      {isSafe && targetUrl && (
+        <motion.div
+          custom={2}
+          variants={fadeUp}
+          initial="hidden"
+          animate="visible"
+          className="flex justify-center pt-2"
+        >
+          <VisitSiteLink url={targetUrl} />
         </motion.div>
       )}
-    </motion.div>
+
+    </div>
   );
 }

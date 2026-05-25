@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useUIStore, ScanMode } from '@frontend/state/useUIStore';
 import TacticalLoader from './TacticalLoader';
@@ -87,7 +87,11 @@ export default function CoreInterface() {
 
       {/* ── Logo Top Left ── */}
       <div className="absolute top-8 left-8 md:top-12 md:left-12 z-30 pointer-events-auto flex flex-col justify-center items-start">
-        <UrlSystemLogo className="h-14 md:h-20 text-white drop-shadow-[0_0_15px_rgba(255,255,255,0.5)]" speed={1.1} />
+        <UrlSystemLogo
+          className="h-14 md:h-20 text-white drop-shadow-[0_0_15px_rgba(255,255,255,0.5)]"
+          style={{ aspectRatio: '950/250' }}
+          speed={1.1}
+        />
       </div>
 
       {/* ── Top Bar Right ── */}
@@ -97,6 +101,7 @@ export default function CoreInterface() {
           <span className="text-[10px] tracking-[0.4em] text-white/30 uppercase">SEC_LEVEL : GAMMA</span>
         </div>
       </header>
+
 
       {/* ── Background Input Stage (always rendered, blurs behind overlay) ── */}
       <main className="absolute inset-0 w-screen h-screen flex flex-col items-center justify-center z-10 pointer-events-none">
@@ -264,74 +269,56 @@ export default function CoreInterface() {
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             transition={{ duration: 0.4 }}
-            className="absolute inset-0 z-30 flex flex-col items-center justify-center gap-6 px-6 md:px-10 py-10 pointer-events-auto"
+            className="absolute inset-0 z-30 overflow-y-auto pointer-events-auto"
           >
-            {/* ── The glassmorphism card ── */}
-            <motion.div
-              initial={{ opacity: 0, scale: 0.93, y: 40, filter: 'blur(20px)' }}
-              animate={{ opacity: 1, scale: 1, y: 0, filter: 'blur(0px)' }}
-              exit={{ opacity: 0, scale: 0.95, y: 20, filter: 'blur(12px)' }}
-              transition={{ duration: 0.75, ease: [0.16, 1, 0.3, 1] }}
-              className="relative w-full max-w-4xl max-h-[75vh] overflow-y-auto rounded-2xl"
-              style={{
-                background: 'rgba(5, 3, 14, 0.78)',
-                backdropFilter: 'blur(36px) saturate(160%)',
-                WebkitBackdropFilter: 'blur(36px) saturate(160%)',
-                border: '1px solid rgba(255,255,255,0.07)',
-                boxShadow: '0 0 0 1px rgba(255,255,255,0.03), 0 50px 100px rgba(0,0,0,0.8), 0 0 120px rgba(102,51,238,0.07)',
-              }}
-            >
-              {/* Card top shimmer line */}
-              <div className="absolute top-0 left-[10%] right-[10%] h-[1px] rounded-full"
-                style={{ background: 'linear-gradient(to right, transparent, rgba(255,255,255,0.12), transparent)' }} />
-
-              {/* Card header */}
-              <div className="flex items-center gap-3 px-8 md:px-12 pt-7 pb-5 border-b border-white/[0.05]">
-                <div className="relative w-2 h-2">
-                  <div className="absolute inset-0 rounded-full bg-white/50 animate-ping" />
-                  <div className="w-2 h-2 rounded-full bg-white" />
-                </div>
-                <span className="text-[10px] tracking-[0.5em] text-white/25 font-mono uppercase">Intelligence Report</span>
-              </div>
-
-              {/* Result content */}
-              <div className="px-8 md:px-12 py-8">
-                <ThreatVisualizer result={activeResult} />
-              </div>
-            </motion.div>
-
-            {/* ── New Scan button — below the card, centered ── */}
-            <motion.button
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: 6 }}
-              transition={{ delay: 0.65, duration: 0.5, ease: [0.16, 1, 0.3, 1] }}
-              onClick={handleReset}
-              className="group flex items-center gap-4"
-            >
-              {/* Icon circle */}
-              <div
-                className="relative flex items-center justify-center w-14 h-14 rounded-full group-hover:scale-105 transition-transform duration-300"
-                style={{
-                  background: 'rgba(255,255,255,0.04)',
-                  border: '1px solid rgba(255,255,255,0.12)',
-                }}
+            <div className="min-h-full w-full flex flex-col items-center justify-center gap-8 px-6 md:px-10 py-16 md:py-24">
+              {/* ── Flat Intelligence Report ── */}
+              <motion.div
+                initial={{ opacity: 0, y: 32, filter: 'blur(14px)' }}
+                animate={{ opacity: 1, y: 0, filter: 'blur(0px)' }}
+                exit={{ opacity: 0, y: 14, filter: 'blur(8px)' }}
+                transition={{ duration: 0.78, ease: [0.16, 1, 0.3, 1] }}
+                className="w-full max-w-4xl"
               >
-                <svg width="20" height="20" viewBox="0 0 20 20" fill="none"
-                  className="text-white/40 group-hover:text-white transition-colors duration-300"
-                >
-                  <path d="M17 10H3M10 3L3 10l7 7" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round"/>
-                </svg>
-                {/* Hover glow */}
-                <div
-                  className="absolute inset-0 rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-300"
-                  style={{ boxShadow: '0 0 24px rgba(255,255,255,0.12), inset 0 0 0 1px rgba(255,255,255,0.2)' }}
+                <ThreatVisualizer
+                  result={activeResult}
+                  targetUrl={activeMode === 'URL' ? urlValue : undefined}
                 />
-              </div>
-              <span className="text-[12px] tracking-[0.5em] font-mono uppercase text-white/25 group-hover:text-white/60 transition-colors duration-300">
-                New Scan
-              </span>
-            </motion.button>
+              </motion.div>
+
+              {/* ── New Scan button ── */}
+              <motion.button
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: 6 }}
+                transition={{ delay: 0.65, duration: 0.5, ease: [0.16, 1, 0.3, 1] }}
+                onClick={handleReset}
+                className="group flex items-center gap-4"
+              >
+                {/* Icon circle */}
+                <div
+                  className="relative flex items-center justify-center w-14 h-14 rounded-full group-hover:scale-105 transition-transform duration-300"
+                  style={{
+                    background: 'rgba(255,255,255,0.04)',
+                    border: '1px solid rgba(255,255,255,0.12)',
+                  }}
+                >
+                  <svg width="20" height="20" viewBox="0 0 20 20" fill="none"
+                    className="text-white/40 group-hover:text-white transition-colors duration-300"
+                  >
+                    <path d="M17 10H3M10 3L3 10l7 7" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round"/>
+                  </svg>
+                  {/* Hover glow */}
+                  <div
+                    className="absolute inset-0 rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-300"
+                    style={{ boxShadow: '0 0 24px rgba(255,255,255,0.12), inset 0 0 0 1px rgba(255,255,255,0.2)' }}
+                  />
+                </div>
+                <span className="text-[12px] tracking-[0.5em] font-mono uppercase text-white/25 group-hover:text-white/60 transition-colors duration-300">
+                  New Scan
+                </span>
+              </motion.button>
+            </div>
           </motion.div>
         )}
       </AnimatePresence>

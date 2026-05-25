@@ -61,6 +61,40 @@ function getApexDomain(hostname: string): string {
   return parts.slice(-2).join('.');
 }
 
+export function validateUrlFormat(url: string): { isValid: boolean; reason?: string } {
+  if (!url || url.trim() === '') {
+    return { isValid: false, reason: 'URL input is empty' };
+  }
+  if (url.includes(' ')) {
+    return { isValid: false, reason: 'URL contains spaces' };
+  }
+  
+  let parsedUrl: URL;
+  try {
+    const normalized = url.startsWith('http') ? url : `https://${url}`;
+    parsedUrl = new URL(normalized);
+  } catch {
+    return { isValid: false, reason: 'URL syntax is malformed or invalid' };
+  }
+
+  const hostname = parsedUrl.hostname;
+  if (!hostname) {
+    return { isValid: false, reason: 'URL is missing a valid hostname' };
+  }
+
+  if (!hostname.includes('.')) {
+    return { isValid: false, reason: 'Domain lacks a top-level extension (e.g. .com, .org)' };
+  }
+
+  const parts = hostname.split('.');
+  const tld = parts[parts.length - 1];
+  if (!/^[a-zA-Z0-9-]{2,}$/.test(tld)) {
+    return { isValid: false, reason: `Invalid top-level domain extension ".${tld}"` };
+  }
+
+  return { isValid: true };
+}
+
 export function analyzeUrl(url: string): { score: number; reasons: ThreatReason[] } {
   let score = 0;
   const reasons: ThreatReason[] = [];

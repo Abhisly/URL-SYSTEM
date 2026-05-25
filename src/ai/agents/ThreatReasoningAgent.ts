@@ -1,6 +1,6 @@
 import { generateOllamaResponse, extractJsonFromResponse } from '@ai/services/ollamaService';
 import { buildUrlPrompt, buildEmailPrompt, buildImagePrompt } from '@ai/prompts/promptEngine';
-import { ThreatReason } from '@projectTypes/index';
+import { ThreatReason, BrowserScanReport } from '@projectTypes/index';
 import { threatMemoryService } from '@ai/memory/threatMemoryService';
 import type { SiteMetadata } from '@ai/services/siteMetadataService';
 
@@ -83,7 +83,8 @@ export class ThreatReasoningAgent {
     contextType: 'URL' | 'EMAIL' | 'IMAGE',
     rawContext: string,
     currentReasons: ThreatReason[],
-    metadata?: SiteMetadata
+    metadata?: SiteMetadata,
+    browserReport?: BrowserScanReport
   ): Promise<AIInsights | null> {
     console.log(`[ThreatReasoningAgent] Reasoning over ${contextType} context...`);
 
