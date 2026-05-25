@@ -41,17 +41,11 @@ export class URLAgent {
 
     // 3. Handle DNS Unresolved (Unreachable/Non-existent Domain)
     if (!browserReport.dns.resolved) {
-      result.status = 'INVALID';
-      result.riskLevel = 'LOW';
-      result.threatScore = 0;
-      result.confidence = 100;
       result.reasons.push({
         id: 'DNS_RESOLUTION_FAILED',
-        description: `Browser DNS lookup failed: ${browserReport.dns.error || 'Host unreachable'}`,
-        severity: 'high'
+        description: `Browser DNS lookup failed: ${browserReport.dns.error || 'Host unreachable'}. Running heuristics fallback.`,
+        severity: 'low'
       });
-      result.aiExplanation = `Target scan aborted. The browser sandbox could not resolve DNS for domain "${new URL(url.startsWith('http') ? url : `https://${url}`).hostname}". The host domain does not exist, or has no active name servers.`;
-      return result;
     }
 
     // 4. Map browser metadata back to SiteMetadata signature

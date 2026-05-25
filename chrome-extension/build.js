@@ -101,7 +101,7 @@ async function runBuild() {
     path.resolve(__dirname, 'dist/icons')
   );
 
-  console.log('\nExtension built successfully into d:\\URL SYSTEM\\chrome-extension\\dist');
+  console.log(`\nExtension built successfully into ${path.resolve(__dirname, 'dist')}`);
 }
 
 runBuild().catch((err) => {

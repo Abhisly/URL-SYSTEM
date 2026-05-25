@@ -25,8 +25,12 @@ export async function runBrowserSimulation(url: string): Promise<BrowserScanRepo
   let dnsError: string | undefined;
 
   try {
-    // dns.promises.lookup uses system resolver to resolve hostname to IP
-    const dnsRes = await dns.promises.lookup(hostname);
+    // Wrap dns.promises.lookup in a 1000ms timeout
+    const lookupPromise = dns.promises.lookup(hostname);
+    const timeoutPromise = new Promise<never>((_, reject) => 
+      setTimeout(() => reject(new Error('DNS resolution timed out')), 1000)
+    );
+    const dnsRes = await Promise.race([lookupPromise, timeoutPromise]);
     ip = dnsRes.address;
     dnsResolved = true;
   } catch (err: unknown) {
@@ -67,7 +71,7 @@ export async function runBrowserSimulation(url: string): Promise<BrowserScanRepo
           'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
           'Accept-Language': 'en-US,en;q=0.9',
         },
-        signal: AbortSignal.timeout(6000), // 6 second timeout
+        signal: AbortSignal.timeout(1500), // 1.5 second timeout
         redirect: 'follow',
       });
 
