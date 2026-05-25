@@ -89,8 +89,8 @@
     const host = document.createElement('div');
     host.id = 'url-system-shield-host';
     host.style.position = 'fixed';
-    host.style.top = '8px';
-    host.style.right = '8px';
+    host.style.top = '4px';
+    host.style.right = '4px';
     host.style.zIndex = '2147483647'; // Max z-index
     host.style.fontFamily = "'Outfit', sans-serif";
     document.body.appendChild(host);
@@ -146,7 +146,7 @@
         background: var(--bg-glass);
         border: 1px solid var(--border-glass);
         border-radius: 9999px;
-        width: 180px;
+        width: 190px;
         height: 36px;
         justify-content: flex-start;
         padding: 0 12px;
@@ -165,11 +165,20 @@
         border-radius: 50%;
         flex-shrink: 0;
         position: relative;
+        transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
       }
 
       .shield-dot.safe { background-color: var(--color-safe); box-shadow: 0 0 10px var(--color-safe-glow); }
       .shield-dot.suspicious { background-color: var(--color-suspicious); box-shadow: 0 0 10px var(--color-suspicious-glow); }
       .shield-dot.phishing, .shield-dot.malicious { background-color: var(--color-phishing); box-shadow: 0 0 10px var(--color-phishing-glow); }
+
+      /* Amplified hover effects for the dot */
+      .shield-badge:hover .shield-dot {
+        transform: scale(1.2);
+      }
+      .shield-badge:hover .shield-dot.safe { box-shadow: 0 0 18px 3px var(--color-safe-glow); }
+      .shield-badge:hover .shield-dot.suspicious { box-shadow: 0 0 18px 3px var(--color-suspicious-glow); }
+      .shield-badge:hover .shield-dot.phishing, .shield-badge:hover .shield-dot.malicious { box-shadow: 0 0 18px 3px var(--color-phishing-glow); }
 
       .shield-dot::after {
         content: '';
@@ -462,14 +471,14 @@
     // Make the host draggable
     let isDragging = false;
     let startY = 0;
-    let startTop = 8;
+    let startTop = 4;
 
     badge.addEventListener('mousedown', (e) => {
       // Only drag with left-click, and don't drag if clicking close button
       if (e.button !== 0 || (e.target as HTMLElement).classList.contains('shield-close')) return;
       isDragging = true;
       startY = e.clientY;
-      startTop = parseInt(host.style.top || '8', 10);
+      startTop = parseInt(host.style.top || '4', 10);
       e.preventDefault();
     });
 
