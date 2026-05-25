@@ -87,11 +87,20 @@ async function handleScanUrl(url: string, tabId?: number) {
     };
   }
 
+function notifyTab(tabId: number | undefined, result: any) {
+  if (tabId !== undefined) {
+    chrome.tabs.sendMessage(tabId, { action: 'showScanResult', result }).catch(() => {
+      // Content script might not be loaded yet, ignore
+    });
+  }
+}
+
   const cleanUrl = url.split('#')[0]; // Remove hash for caching
   if (scanCache.has(cleanUrl)) {
     const cached = scanCache.get(cleanUrl);
     if (tabId !== undefined) {
       updateExtensionBadge(cached.status, tabId);
+      notifyTab(tabId, cached);
     }
     return cached;
   }
@@ -112,6 +121,7 @@ async function handleScanUrl(url: string, tabId?: number) {
       
       // Update browser badge for this tab
       updateExtensionBadge(data.status, tabId);
+      notifyTab(tabId, data);
       return data;
     }
     throw new Error('Server returned error status');
@@ -121,7 +131,7 @@ async function handleScanUrl(url: string, tabId?: number) {
     // 2. Local Fallback (Heuristic Analysis)
     const validation = validateUrlFormat(cleanUrl);
     if (!validation.isValid) {
-      return {
+      const invalidRes = {
         status: 'INVALID',
         confidence: 100,
         riskLevel: 'LOW',
@@ -129,6 +139,8 @@ async function handleScanUrl(url: string, tabId?: number) {
         threatScore: 0,
         aiExplanation: 'Aborted: Local validation failed.'
       };
+      notifyTab(tabId, invalidRes);
+      return invalidRes;
     }
 
     const localResult = analyzeUrlLocal(cleanUrl);
@@ -143,6 +155,7 @@ async function handleScanUrl(url: string, tabId?: number) {
 
     scanCache.set(cleanUrl, result);
     updateExtensionBadge(result.status, tabId);
+    notifyTab(tabId, result);
     return result;
   }
 }
@@ -253,6 +266,7 @@ chrome.tabs.onActivated.addListener((activeInfo) => {
       const cached = scanCache.get(cleanUrl);
       if (cached) {
         updateExtensionBadge(cached.status, activeInfo.tabId);
+        notifyTab(activeInfo.tabId, cached);
       } else {
         chrome.action.setBadgeText({ text: '', tabId: activeInfo.tabId });
         // Start scanning automatically if not scanned yet

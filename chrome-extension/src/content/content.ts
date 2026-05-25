@@ -16,8 +16,49 @@
     }
     if (message.action === 'startAreaSelection') {
       startAreaSelection();
+      return true;
+    }
+    if (message.action === 'showScanResult') {
+      updateFloatingDotUI(message.result);
+      return true;
     }
   });
+
+  let lastUrl = window.location.href;
+
+  function handleUrlChange(newUrl: string) {
+    if (!newUrl.startsWith('http')) {
+      if (activeHost) {
+        activeHost.style.display = 'none';
+      }
+      return;
+    }
+
+    showLoadingState('Analyzing new URL layers...');
+
+    chrome.runtime.sendMessage({ action: 'scanUrl', url: newUrl }, (result) => {
+      if (!result || result.error || result.status === 'INVALID') {
+        if (activeHost) {
+          activeHost.style.display = 'none';
+        }
+        return;
+      }
+
+      if (activeHost) {
+        activeHost.style.display = 'block';
+      }
+      updateFloatingDotUI(result);
+    });
+  }
+
+  // Periodic URL polling check for Single Page Apps (Gmail, YouTube, etc.)
+  setInterval(() => {
+    const currentUrl = window.location.href;
+    if (currentUrl !== lastUrl) {
+      lastUrl = currentUrl;
+      handleUrlChange(currentUrl);
+    }
+  }, 800);
 
   // Wait for document to load
   if (document.readyState === 'loading') {
