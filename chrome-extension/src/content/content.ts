@@ -489,11 +489,6 @@
   function updateFloatingDotUI(result: any) {
     if (!activeHost || !activeShadow) {
       injectFloatingDot(result);
-      const panel = activeShadow?.querySelector('.shield-panel') as HTMLElement;
-      if (panel) {
-        panel.style.display = 'flex';
-        setTimeout(() => panel.classList.add('open'), 20);
-      }
       return;
     }
 
@@ -558,12 +553,6 @@
       });
     }
 
-    // Force Open Panel
-    const panel = activeShadow.querySelector('.shield-panel') as HTMLElement;
-    if (panel) {
-      panel.style.display = 'flex';
-      setTimeout(() => panel.classList.add('open'), 20);
-    }
   }
 
   function showLoadingState(msg: string) {
