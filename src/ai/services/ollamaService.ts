@@ -19,8 +19,8 @@ export async function generateOllamaResponse(prompt: string): Promise<string> {
         temperature: AI_TEMPERATURE,
         stream: false
       }),
-      // Set a timeout of 30 seconds
-      signal: AbortSignal.timeout(30000) 
+      // Set a timeout of 90 seconds (to accommodate CPU-only inference)
+      signal: AbortSignal.timeout(90000) 
     });
 
     if (!res.ok) {
