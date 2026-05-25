@@ -10,6 +10,10 @@
 
   // Listen for messages from background/popup
   chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
+    if (message.action === 'ping') {
+      sendResponse({ status: 'pong' });
+      return true;
+    }
     if (message.action === 'startAreaSelection') {
       startAreaSelection();
     }
@@ -85,24 +89,27 @@
       .shield-badge {
         display: flex;
         align-items: center;
-        gap: 8px;
+        justify-content: center;
         background: var(--bg-glass);
         border: 1px solid var(--border-glass);
-        border-radius: 9999px;
-        padding: 4px 8px;
+        border-radius: 50%;
+        width: 36px;
+        height: 36px;
         cursor: pointer;
         box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4);
         backdrop-filter: blur(16px);
         -webkit-backdrop-filter: blur(16px);
         transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
-        max-width: 32px;
-        height: 32px;
         overflow: hidden;
+        box-sizing: border-box;
       }
 
       .shield-badge:hover {
-        max-width: 240px;
-        padding-right: 12px;
+        border-radius: 9999px;
+        width: 180px;
+        justify-content: flex-start;
+        padding: 0 12px;
+        gap: 8px;
         border-color: rgba(255, 255, 255, 0.2);
         box-shadow: 0 8px 30px rgba(0, 0, 0, 0.6);
         transform: translateY(-1px);

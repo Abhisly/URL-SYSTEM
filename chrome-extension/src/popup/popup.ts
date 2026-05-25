@@ -34,6 +34,20 @@ document.addEventListener('DOMContentLoaded', async () => {
           analyzeBtn.disabled = true;
           return;
         }
+
+        // Ping and programmatically inject content script if not active
+        chrome.tabs.sendMessage(activeTabId!, { action: 'ping' }, async (response) => {
+          if (chrome.runtime.lastError || !response || response.status !== 'pong') {
+            try {
+              await chrome.scripting.executeScript({
+                target: { tabId: activeTabId! },
+                files: ['content.js']
+              });
+            } catch (err) {
+              console.warn('[URL SYSTEM SHIELD] Content script programmatic injection failed/skipped:', err);
+            }
+          }
+        });
       }
     }
   } catch (err) {
