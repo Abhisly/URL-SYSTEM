@@ -19,7 +19,11 @@ export async function POST(request: NextRequest) {
     if (image && typeof image === 'string') {
       try {
         console.log('[API/analyze-image] Initializing server-side Tesseract OCR...');
-        const worker = await Tesseract.createWorker('eng');
+        const worker = await Tesseract.createWorker('eng', 1, {
+          langPath: process.cwd(),
+          cachePath: '/tmp',
+          gzip: false,
+        });
         const ocrRes = await worker.recognize(image);
         textToAnalyze = ocrRes.data.text.trim();
         await worker.terminate();
